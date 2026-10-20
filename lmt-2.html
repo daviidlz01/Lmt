@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor LMT — EJESA Jujuy</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:100vh;overflow:hidden}
+
+/* ── TOPBAR ── */
+.topbar{height:48px;background:#1a1f2e;border-bottom:1px solid #2d3748;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#63b3ed}
+.topbar-logo i{font-size:20px}
+.topbar-sep{width:1px;height:24px;background:#2d3748}
+.topbar-title{font-size:13px;color:#a0aec0}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tbtn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;border:1px solid #2d3748;background:#1e2535;color:#a0aec0;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.tbtn:hover{background:#2d3748;color:#e2e8f0}
+.tbtn.active{background:#2b4c7e;color:#90cdf4;border-color:#4a90d9}
+.tbtn.success{background:#1a3a2a;color:#68d391;border-color:#2f855a}
+.tbtn.danger{background:#3a1a1a;color:#fc8181;border-color:#c53030}
+
+/* ── LAYOUT ── */
+.layout{display:flex;height:calc(100vh - 48px)}
+
+/* ── LEFT PANEL ── */
+.left-panel{width:300px;flex-shrink:0;background:#1a1f2e;border-right:1px solid #2d3748;display:flex;flex-direction:column;overflow:hidden}
+.panel-section{padding:12px 14px;border-bottom:1px solid #2d3748}
+.ps-title{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ps-title i{font-size:13px}
+
+/* Upload zone */
+.upload-zone{border:1.5px dashed #2d3748;border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:border-color .2s;background:#161b27}
+.upload-zone:hover{border-color:#4a90d9}
+.upload-zone i{font-size:24px;color:#4a5568;display:block;margin-bottom:6px}
+.upload-zone p{font-size:11px;color:#718096}
+.upload-zone input{display:none}
+.upload-log{font-size:10px;color:#718096;background:#0f1117;border-radius:5px;padding:6px 8px;margin-top:6px;max-height:80px;overflow-y:auto;font-family:monospace;display:none;line-height:1.6}
+
+/* Distribuidor list */
+.dist-list{flex:1;overflow-y:auto}
+.dist-item{padding:8px 14px;border-bottom:1px solid #1e2535;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
+.dist-item:hover{background:#1e2535}
+.dist-item.active{background:#1e3a5a}
+.dist-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dist-name{font-size:12px;font-weight:600;color:#e2e8f0;flex:1}
+.dist-meta{font-size:10px;color:#718096}
+.dist-count{font-size:10px;color:#63b3ed;font-weight:700}
+
+/* Stats bar */
+.stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.stat-box{background:#0f1117;border-radius:6px;padding:7px 9px;border:1px solid #2d3748}
+.stat-num{font-size:17px;font-weight:700;color:#63b3ed}
+.stat-lbl{font-size:10px;color:#718096}
+
+/* Mode toolbar */
+.mode-bar{display:flex;gap:4px;flex-wrap:wrap}
+.mbt{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:6px;border:1px solid #2d3748;background:#161b27;color:#718096;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;flex:1;justify-content:center}
+.mbt:hover{background:#1e2535;color:#e2e8f0}
+.mbt.on{background:#1e3a5a;color:#63b3ed;border-color:#2b5797}
+.mbt i{font-size:13px}
+
+/* Seta info panel */
+.seta-info{background:#0f1117;border-radius:8px;padding:10px 12px;font-size:12px;display:none}
+.si-title{font-size:13px;font-weight:700;color:#63b3ed;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.si-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a1f2e}
+.si-row:last-child{border-bottom:none}
+.si-lbl{color:#718096}
+.si-val{color:#e2e8f0;font-weight:600;text-align:right}
+
+/* ── MAP ── */
+.map-wrap{flex:1;position:relative}
+#map{width:100%;height:100%}
+
+/* Map overlays */
+.map-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:500;background:#1a1f2e;border:1px solid #2d3748;color:#e2e8f0;padding:7px 14px;border-radius:99px;font-size:12px;font-weight:600;display:none;align-items:center;gap:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.map-badge.drawing{background:#1e3a5a;border-color:#4a90d9;color:#90cdf4}
+
+.legend-box{position:absolute;bottom:30px;right:12px;z-index:500;background:#1a1f2edd;border:1px solid #2d3748;border-radius:8px;padding:10px 12px;font-size:11px;min-width:170px}
+.leg-title{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;margin-bottom:6px}
+.leg-row{display:flex;align-items:center;gap:7px;padding:2px 0;color:#a0aec0}
+.leg-dot{width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,.3);flex-shrink:0}
+.leg-line{width:22px;height:3px;border-radius:99px;flex-shrink:0}
+
+/* Context menu */
+.ctx-menu{position:absolute;z-index:600;background:#1a1f2e;border:1px solid #2d3748;border-radius:8px;padding:4px;min-width:160px;box-shadow:0 4px 16px rgba(0,0,0,.5);display:none}
+.ctx-item{padding:7px 12px;font-size:12px;color:#e2e8f0;cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:7px}
+.ctx-item:hover{background:#2d3748}
+.ctx-item.danger{color:#fc8181}
+.ctx-item.danger:hover{background:#3a1a1a}
+.ctx-sep{height:1px;background:#2d3748;margin:3px 0}
+
+/* Georeferenciación */
+.georef-overlay{position:fixed;inset:0;z-index:900;background:#0f1117ee;display:none;flex-direction:column}
+.georef-header{height:48px;background:#1a1f2e;border-bottom:1px solid #2d3748;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0}
+.georef-title{font-size:14px;font-weight:700;color:#63b3ed}
+.georef-body{display:flex;flex:1;overflow:hidden}
+.georef-left{width:340px;flex-shrink:0;background:#1a1f2e;border-right:1px solid #2d3748;padding:14px;overflow-y:auto}
+.georef-map{flex:1;position:relative}
+#georef-map{width:100%;height:100%}
+.cp-row{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid #2d3748;font-size:11px}
+.cp-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.cp-coords{flex:1;font-family:monospace;color:#a0aec0}
+.cp-status{font-size:10px;flex-shrink:0}
+.georef-hint{font-size:11px;color:#718096;line-height:1.6;margin-bottom:10px;background:#161b27;border-radius:6px;padding:9px 10px}
+.opacity-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.opacity-row label{font-size:11px;color:#718096;white-space:nowrap}
+.opacity-row input{flex:1}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:#0f1117}
+::-webkit-scrollbar-thumb{background:#2d3748;border-radius:99px}
+
+/* Progress */
+.progress-bar{height:3px;background:#2d3748;border-radius:99px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:#4a90d9;border-radius:99px;transition:width .3s}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    <i class="ti ti-topology-star-ring-3"></i>
+    Editor LMT
+  </div>
+  <div class="topbar-sep"></div>
+  <span class="topbar-title">Red de Distribución Primaria — Jujuy</span>
+  <div class="topbar-right">
+    <button class="tbtn" id="btn-toggle-setas" onclick="toggleCapaSetas()">
+      <i class="ti ti-bolt"></i> SETs
+    </button>
+    <button class="tbtn" id="btn-toggle-lineas" onclick="toggleCapaLineas()">
+      <i class="ti ti-vector-bezier"></i> LMT
+    </button>
+    <button class="tbtn" id="btn-toggle-servicios" onclick="toggleCapaServicios()">
+      <i class="ti ti-home-bolt"></i> Servicios
+    </button>
+    <div class="topbar-sep"></div>
+    <button class="tbtn" onclick="exportarGeoJSON()">
+      <i class="ti ti-download"></i> Exportar
+    </button>
+    <div class="topbar-sep"></div>
+    <button class="tbtn" onclick="abrirGeoref()" title="Superponer plano PDF">
+      <i class="ti ti-layers-intersect"></i> Superponer plano
+    </button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="left-panel">
+
+    <!-- SUBIR EXCEL -->
+    <div class="panel-section">
+      <div class="ps-title"><i class="ti ti-upload"></i> Cargar base de setas</div>
+      <label class="upload-zone">
+        <input type="file" id="file-setas" accept=".xlsx,.xls" onchange="cargarExcelSetas(this)">
+        <i class="ti ti-table-import"></i>
+        <p>Subir Excel de setas<br><span style="font-size:10px">BASE_SETAS_...xlsx</span></p>
+      </label>
+      <div class="progress-bar" id="pg-bar" style="display:none">
+        <div class="progress-fill" id="pg-fill" style="width:0%"></div>
+      </div>
+      <div class="upload-log" id="upload-log"></div>
+    </div>
+
+    <!-- IMPORTAR SHAPEFILE -->
+    <div class="panel-section">
+      <div class="ps-title"><i class="ti ti-file-zip"></i> Importar GPS desde Shapefile</div>
+      <label class="upload-zone">
+        <input type="file" id="file-shp" accept=".zip" onchange="importarShapefile(this)">
+        <i class="ti ti-map-pin-bolt"></i>
+        <p>Subir ZIP del shapefile<br><span style="font-size:10px">estaciones_electricas.zip</span></p>
+      </label>
+      <div class="progress-bar" id="shp-pgbar" style="display:none">
+        <div class="progress-fill" id="shp-pgfill" style="width:0%"></div>
+      </div>
+      <div class="upload-log" id="shp-log"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="panel-section" id="stats-sec" style="display:none">
+      <div class="stats-bar">
+        <div class="stat-box"><div class="stat-num" id="st-setas">0</div><div class="stat-lbl">SETs</div></div>
+        <div class="stat-box"><div class="stat-num" id="st-secc">0</div><div class="stat-lbl">Secc.</div></div>
+        <div class="stat-box"><div class="stat-num" id="st-dist">0</div><div class="stat-lbl">Distr.</div></div>
+      </div>
+    </div>
+
+    <!-- MODO DE EDICIÓN -->
+    <div class="panel-section">
+      <div class="ps-title"><i class="ti ti-pencil"></i> Modo de edición</div>
+      <div class="mode-bar">
+        <button class="mbt" id="mode-ver" onclick="setMode('ver')">
+          <i class="ti ti-hand-stop"></i> Ver
+        </button>
+        <button class="mbt" id="mode-linea" onclick="setMode('linea')">
+          <i class="ti ti-vector-bezier-2"></i> Trazar LMT
+        </button>
+        <button class="mbt" id="mode-mover" onclick="setMode('mover')">
+          <i class="ti ti-arrows-move"></i> Mover SET
+        </button>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:#718096" id="mode-hint">
+        Seleccioná un distribuidor y usá "Trazar LMT" para dibujar la línea.
+      </div>
+    </div>
+
+    <!-- DISTRIBUIDOR ACTIVO -->
+    <div class="panel-section">
+      <div class="ps-title"><i class="ti ti-route"></i> Distribuidor activo</div>
+      <select id="dist-select" onchange="setDistribuidor(this.value)"
+        style="width:100%;padding:6px 9px;font-size:12px;border:1px solid #2d3748;border-radius:6px;background:#0f1117;color:#e2e8f0;outline:none;font-family:inherit">
+        <option value="">— Todos —</option>
+      </select>
+      <div style="margin-top:6px;display:flex;gap:4px">
+        <button class="tbtn" style="flex:1" onclick="descargarLinea()">
+          <i class="ti ti-download" style="font-size:11px"></i> Guardar línea
+        </button>
+        <button class="tbtn danger" style="flex:1" onclick="borrarLineaDist()">
+          <i class="ti ti-trash" style="font-size:11px"></i> Borrar línea
+        </button>
+      </div>
+    </div>
+
+    <!-- INFO SET SELECCIONADA -->
+    <div class="panel-section" style="flex:1;overflow-y:auto">
+      <div class="ps-title"><i class="ti ti-info-circle"></i> SET seleccionada</div>
+      <div class="seta-info" id="seta-info">
+        <div class="si-title" id="si-id">—</div>
+        <div class="si-row"><span class="si-lbl">Dirección</span><span class="si-val" id="si-dir">-</span></div>
+        <div class="si-row"><span class="si-lbl">KVA</span><span class="si-val" id="si-kva">-</span></div>
+        <div class="si-row"><span class="si-lbl">Clientes BD</span><span class="si-val" id="si-cli">-</span></div>
+        <div class="si-row"><span class="si-lbl">Distribuidor</span><span class="si-val" id="si-dist">-</span></div>
+        <div class="si-row"><span class="si-lbl">ET</span><span class="si-val" id="si-et">-</span></div>
+        <div class="si-row"><span class="si-lbl">Fuente GPS</span><span class="si-val" id="si-fuente">-</span></div>
+        <div style="margin-top:8px;display:flex;gap:5px">
+          <button class="tbtn" style="flex:1;font-size:10px" onclick="corregirSetaGPS()">
+            <i class="ti ti-map-pin" style="font-size:11px"></i> Corregir GPS
+          </button>
+          <button class="tbtn" style="flex:1;font-size:10px" onclick="abrirGMaps()">
+            <i class="ti ti-map-2" style="font-size:11px"></i> Maps
+          </button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#4a5568;text-align:center;padding:16px" id="seta-empty">
+        Hacé click en una SET del mapa
+      </div>
+
+      <!-- Lista distribuidores -->
+      <div class="ps-title" style="margin-top:10px"><i class="ti ti-list"></i> Distribuidores</div>
+      <div class="dist-list" id="dist-list">
+        <div style="padding:12px;font-size:11px;color:#4a5568;text-align:center">Cargá el Excel de setas</div>
+      </div>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-badge" id="map-badge"></div>
+
+    <div class="legend-box">
+      <div class="leg-title">Referencias</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#63b3ed"></div> SET (centroide)</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#68d391"></div> SET (GPS manual)</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#f6ad55;width:8px;height:8px;border-radius:2px"></div> Seccionador</div>
+      <div class="leg-row"><div class="leg-line" style="background:#63b3ed"></div> Línea LMT trazada</div>
+      <div class="leg-row"><div class="leg-line" style="background:#68d391;height:2px;border-top:2px dashed #68d391;background:none"></div> LMT en edición</div>
+    </div>
+
+    <div class="ctx-menu" id="ctx-menu">
+      <div class="ctx-item" onclick="ctxAgregarPunto()"><i class="ti ti-map-pin-plus"></i> Agregar punto aquí</div>
+      <div class="ctx-item" onclick="ctxVerServiciosSeta()"><i class="ti ti-users"></i> Ver servicios de esta SET</div>
+      <div class="ctx-sep"></div>
+      <div class="ctx-item danger" onclick="ctxEliminarPunto()"><i class="ti ti-trash"></i> Eliminar punto</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL GEORREFERENCIACIÓN -->
+<div class="georef-overlay" id="georef-overlay">
+  <div class="georef-header">
+    <i class="ti ti-layers-intersect" style="font-size:18px;color:#63b3ed"></i>
+    <span class="georef-title">Georreferenciar plano</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span id="georef-status" style="font-size:11px;color:#718096"></span>
+      <button class="tbtn success" id="btn-aplicar-georef" onclick="aplicarGeoref()" style="display:none">
+        <i class="ti ti-check"></i> Aplicar al mapa principal
+      </button>
+      <button class="tbtn danger" onclick="cerrarGeoref()">
+        <i class="ti ti-x"></i> Cancelar
+      </button>
+    </div>
+  </div>
+  <div class="georef-body">
+    <div class="georef-left">
+      <div class="georef-hint">
+        <b style="color:#e2e8f0">¿Cómo usar?</b><br>
+        1. Subí una imagen del plano (PNG/JPG exportado del PDF)<br>
+        2. Hacé click en <b>4 puntos conocidos</b> en la imagen del plano<br>
+        3. Luego hacé click en el mismo punto en el mapa de la derecha<br>
+        4. Con 4 puntos definidos, aplicá la superposición
+      </div>
+
+      <!-- Subir imagen -->
+      <label class="upload-zone" style="margin-bottom:10px">
+        <input type="file" id="file-plano" accept="image/*,.pdf" onchange="cargarImagenPlano(this)">
+        <i class="ti ti-photo-up"></i>
+        <p>Subir imagen del plano<br><span style="font-size:10px">PNG, JPG (exportá una página del PDF)</span></p>
+      </label>
+
+      <!-- Puntos de control -->
+      <div class="ps-title" style="margin-bottom:6px"><i class="ti ti-crosshair"></i> Puntos de control</div>
+      <div id="cp-list">
+        <div style="font-size:11px;color:#4a5568;text-align:center;padding:12px">Cargá una imagen primero</div>
+      </div>
+
+      <!-- Opacidad -->
+      <div class="opacity-row" style="margin-top:12px">
+        <label>Opacidad del plano</label>
+        <input type="range" id="overlay-opacity" min="10" max="90" value="55"
+          oninput="ajustarOpacidad(this.value)" style="flex:1">
+        <span id="opacity-val" style="font-size:11px;color:#718096;min-width:30px">55%</span>
+      </div>
+
+      <!-- Capas activas -->
+      <div style="margin-top:12px">
+        <div class="ps-title"><i class="ti ti-stack-2"></i> Planos cargados</div>
+        <div id="planos-list" style="font-size:11px;color:#4a5568">Ninguno</div>
+      </div>
+    </div>
+
+    <!-- Mapa de georreferenciación -->
+    <div class="georef-map">
+      <div id="georef-map"></div>
+      <!-- Preview del plano en la esquina -->
+      <div id="plano-preview-wrap" style="position:absolute;bottom:12px;left:12px;z-index:500;display:none;flex-direction:column;gap:6px">
+        <div style="font-size:10px;color:#e2e8f0;background:#1a1f2ecc;padding:4px 8px;border-radius:5px;font-weight:600">Plano cargado — click para seleccionar punto</div>
+        <div style="position:relative;max-width:380px;max-height:280px;border:2px solid #4a90d9;border-radius:6px;overflow:hidden;cursor:crosshair" id="plano-preview-container">
+          <img id="plano-preview" style="width:100%;height:100%;object-fit:contain;display:block;background:#0f1117">
+          <canvas id="plano-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* ═══════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════ */
+const SUPA_URL = 'https://yhawsfbtmyopffaphcdc.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloYXdzZmJ0bXlvcGZmYXBoY2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MzI3MDUsImV4cCI6MjA5NDIwODcwNX0.yjUW6ZFe9KGqM5-3toXfQEGXKPSNb185yzcEJeF_Tzo';
+
+// Paleta de colores por distribuidor (cíclica)
+const DIST_COLORS = [
+  '#63b3ed','#68d391','#f6ad55','#fc8181','#b794f4',
+  '#76e4f7','#f687b3','#fbd38d','#9ae6b4','#feb2b2',
+  '#90cdf4','#c6f6d5','#feebc8','#fed7d7','#e9d8fd',
+  '#bee3f8','#c6f6d5','#faf089','#fed7e2','#e2e8f0',
+];
+
+/* ═══════════════════════════════════════
+   ESTADO
+═══════════════════════════════════════ */
+let sb, map;
+let setasData = {};        // { id → {id, distribuidor, et, dir, kva, lat, long, fuente} }
+let lineasData = {};       // { distribuidor → [[lat,lng],...] }
+let setaMarkers = {};      // { id → marker }
+let lineasLayers = {};     // { distribuidor → polyline }
+let lineaEditando = null;  // polyline en edición
+let puntosEdicion = [];    // [[lat,lng]...] puntos de la línea en edición
+let modo = 'ver';
+let distActivo = '';
+let setaSeleccionada = null;
+let ctxLatLng = null;
+let ctxMarker = null;
+let capaSetas = true, capaLineas = true, capaServicios = false;
+let serviciosLayer = null;
+let corrigiendoSeta = null;
+
+// Colores asignados por distribuidor
+let distColors = {};
+let distList = [];
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+async function init() {
+  sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  initMap();
+  await Promise.all([
+    cargarSetasDeSupabase(),
+    cargarLineasDeSupabase(),
+  ]);
+}
+
+function initMap() {
+  map = L.map('map', { zoomControl: true }).setView([-24.19, -65.29], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
+
+  map.on('click', onMapClick);
+  map.on('contextmenu', onMapRightClick);
+  document.addEventListener('click', hideCtxMenu);
+}
+
+/* ═══════════════════════════════════════
+   CARGAR SETAS DESDE SUPABASE
+═══════════════════════════════════════ */
+async function cargarSetasDeSupabase() {
+  const { data } = await sb.from('lmt_setas').select('*');
+  if (!data || !data.length) return;
+  data.forEach(r => { setasData[r.id] = r; });
+  asignarColoresDistribuidores();
+  renderizarSetas();
+  poblarDistribuidores();
+  document.getElementById('stats-sec').style.display = 'block';
+  actualizarStats();
+}
+
+async function cargarLineasDeSupabase() {
+  const { data } = await sb.from('lmt_lineas').select('*').order('distribuidor').order('orden');
+  if (!data || !data.length) return;
+  // Agrupar por distribuidor
+  const grupos = {};
+  data.forEach(r => {
+    if (!grupos[r.distribuidor]) grupos[r.distribuidor] = [];
+    grupos[r.distribuidor].push([r.lat, r.long]);
+  });
+  Object.entries(grupos).forEach(([dist, pts]) => {
+    lineasData[dist] = pts;
+    dibujarLineaDist(dist, pts);
+  });
+}
+
+/* ═══════════════════════════════════════
+   CARGAR EXCEL DE SETAS
+═══════════════════════════════════════ */
+async function cargarExcelSetas(input) {
+  const file = input.files[0]; if (!file) return;
+  const log = document.getElementById('upload-log');
+  log.style.display = 'block'; log.innerHTML = '';
+  document.getElementById('pg-bar').style.display = 'block';
+  document.getElementById('pg-fill').style.width = '5%';
+
+  function addLog(m) { log.innerHTML += m + '<br>'; log.scrollTop = log.scrollHeight; }
+
+  addLog('📂 Leyendo Excel...');
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { raw: true, defval: '', header: 0 });
+
+      addLog(`✅ ${rows.length} filas`);
+      document.getElementById('pg-fill').style.width = '20%';
+
+      // Detectar columnas clave (fila 1 tiene los headers reales)
+      // El archivo tiene: col0=ID, col1=Dirección, col2=KVA, col4=Clientes, col8=Distribuidor, col9=ET, col10=Tipo(SE/S), col11=Estructura
+      const parsed = [];
+      rows.forEach((row, i) => {
+        const vals = Object.values(row);
+        const id   = String(vals[0] || '').trim();
+        const dir  = String(vals[1] || '').trim();
+        const kva  = parseInt(vals[2]) || null;
+        const cli  = parseInt(vals[4]) || null;
+        const dist = String(vals[8] || '').trim();
+        const et   = String(vals[9] || '').trim();
+        const tipo = String(vals[10] || '').trim(); // SE o S
+
+        if (!id || id === 'Nº SET' || id === 'Esta Carpeta') return;
+        if (!dist || dist === 'Distribuidor') return;
+
+        parsed.push({ id, dir, kva, cli, distribuidor: dist, et, tipo });
+      });
+
+      addLog(`🔍 ${parsed.filter(r=>r.tipo==='SE').length} SETs, ${parsed.filter(r=>r.tipo==='S').length} Seccionadores`);
+      document.getElementById('pg-fill').style.width = '35%';
+
+      // Calcular centroides usando servicios de la BD
+      addLog('📍 Calculando centroides de servicios...');
+      const setIds = parsed.filter(r => r.tipo === 'SE').map(r => r.id);
+
+      // Cargar servicios de Supabase agrupados por seta
+      const { data: servData } = await sb.from('servicios')
+        .select('seta, lat, long')
+        .not('lat', 'is', null)
+        .not('long', 'is', null);
+
+      // Calcular centroide por seta
+      const centroideMap = {};
+      (servData || []).forEach(r => {
+        if (!r.seta) return;
+        if (!centroideMap[r.seta]) centroideMap[r.seta] = { sumLat: 0, sumLng: 0, n: 0 };
+        centroideMap[r.seta].sumLat += r.lat;
+        centroideMap[r.seta].sumLng += r.long;
+        centroideMap[r.seta].n++;
+      });
+
+      let conCentroide = 0, sinCentroide = 0;
+
+      // Preparar rows para upsert
+      const upsertRows = parsed.map(r => {
+        const c = centroideMap[r.id];
+        let lat = null, long = null, fuente = 'sin_ubicacion';
+        if (c && c.n > 0) {
+          lat   = Math.round((c.sumLat / c.n) * 1e6) / 1e6;
+          long  = Math.round((c.sumLng / c.n) * 1e6) / 1e6;
+          fuente = 'centroide';
+          conCentroide++;
+        } else {
+          sinCentroide++;
+        }
+        return {
+          id: r.id,
+          distribuidor: r.distribuidor,
+          et: r.et,
+          tipo: r.tipo,
+          direccion: r.dir,
+          kva: r.kva,
+          clientes_bd: c?.n || 0,
+          lat, long, fuente,
+        };
+      });
+
+      addLog(`📊 ${conCentroide} con centroide, ${sinCentroide} sin ubicación`);
+      document.getElementById('pg-fill').style.width = '60%';
+
+      // Upsert por lotes
+      addLog('💾 Guardando en Supabase...');
+      const BATCH = 200;
+      let done = 0;
+      for (let i = 0; i < upsertRows.length; i += BATCH) {
+        const batch = upsertRows.slice(i, i + BATCH);
+        const { error } = await sb.from('lmt_setas').upsert(batch, { onConflict: 'id' });
+        if (error) { addLog('❌ ' + error.message); break; }
+        done += batch.length;
+        document.getElementById('pg-fill').style.width = (60 + Math.round(done / upsertRows.length * 35)) + '%';
+      }
+
+      document.getElementById('pg-fill').style.width = '100%';
+      addLog(`🎉 ${done} elementos guardados`);
+
+      // Recargar y renderizar
+      upsertRows.forEach(r => { setasData[r.id] = r; });
+      asignarColoresDistribuidores();
+      renderizarSetas();
+      poblarDistribuidores();
+      document.getElementById('stats-sec').style.display = 'block';
+      actualizarStats();
+
+      setTimeout(() => { document.getElementById('pg-bar').style.display = 'none'; }, 1000);
+    } catch (err) {
+      addLog('❌ Error: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  input.value = '';
+}
+
+/* ═══════════════════════════════════════
+   COLORES Y DISTRIBUIDORES
+═══════════════════════════════════════ */
+function asignarColoresDistribuidores() {
+  distList = [...new Set(Object.values(setasData).map(r => r.distribuidor).filter(Boolean))].sort();
+  distList.forEach((d, i) => {
+    if (!distColors[d]) distColors[d] = DIST_COLORS[i % DIST_COLORS.length];
+  });
+}
+
+function poblarDistribuidores() {
+  const sel = document.getElementById('dist-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Todos —</option>';
+  distList.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d; o.textContent = d;
+    sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+
+  const listEl = document.getElementById('dist-list');
+  listEl.innerHTML = '';
+  distList.forEach(d => {
+    const setas = Object.values(setasData).filter(r => r.distribuidor === d && r.tipo === 'SE');
+    const conPos = setas.filter(r => r.lat && r.long).length;
+    const hasLinea = !!lineasData[d];
+    const div = document.createElement('div');
+    div.className = 'dist-item' + (d === distActivo ? ' active' : '');
+    div.innerHTML = `
+      <div class="dist-color" style="background:${distColors[d]}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="dist-name">${d}</div>
+        <div class="dist-meta">${setas.length} SETs · ${conPos} con GPS${hasLinea ? ' · <span style="color:#68d391">LMT ✓</span>' : ''}</div>
+      </div>
+      <span class="dist-count">${setas.length}</span>`;
+    div.onclick = () => setDistribuidor(d);
+    listEl.appendChild(div);
+  });
+}
+
+function actualizarStats() {
+  const all = Object.values(setasData);
+  document.getElementById('st-setas').textContent = all.filter(r => r.tipo === 'SE').length;
+  document.getElementById('st-secc').textContent  = all.filter(r => r.tipo === 'S').length;
+  document.getElementById('st-dist').textContent  = distList.length;
+}
+
+/* ═══════════════════════════════════════
+   RENDERIZAR SETAS EN MAPA
+═══════════════════════════════════════ */
+function renderizarSetas() {
+  // Limpiar markers viejos
+  Object.values(setaMarkers).forEach(m => map.removeLayer(m));
+  setaMarkers = {};
+
+  const filtrado = distActivo
+    ? Object.values(setasData).filter(r => r.distribuidor === distActivo)
+    : Object.values(setasData);
+
+  filtrado.forEach(r => {
+    if (!r.lat || !r.long) return;
+    const color = distColors[r.distribuidor] || '#63b3ed';
+    const esSeta = r.tipo === 'SE';
+    const esManual = r.fuente === 'manual';
+
+    const icon = esSeta
+      ? L.divIcon({
+          className: '',
+          html: `<div style="width:12px;height:12px;border-radius:50%;background:${esManual ? '#68d391' : color};border:2px solid rgba(255,255,255,.7);box-shadow:0 1px 5px rgba(0,0,0,.5)"></div>`,
+          iconAnchor: [6, 6]
+        })
+      : L.divIcon({
+          className: '',
+          html: `<div style="width:8px;height:8px;background:#f6ad55;border:1.5px solid rgba(255,255,255,.6);box-shadow:0 1px 3px rgba(0,0,0,.4);transform:rotate(45deg)"></div>`,
+          iconAnchor: [4, 4]
+        });
+
+    const m = L.marker([r.lat, r.long], { icon, draggable: modo === 'mover' });
+    m._setaId = r.id;
+    m.bindTooltip(r.id, { permanent: false, direction: 'top', className: 'leaflet-tooltip-dark' });
+    m.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      seleccionarSeta(r.id);
+      if (modo === 'linea') agregarPuntoLinea([r.lat, r.long]);
+    });
+    m.on('dragend', async (e) => {
+      const pos = e.target.getLatLng();
+      await guardarPosManual(r.id, pos.lat, pos.lng);
+    });
+    m.on('contextmenu', (e) => {
+      L.DomEvent.stopPropagation(e);
+      ctxLatLng = e.latlng;
+      ctxMarker = r.id;
+      mostrarCtxMenu(e.originalEvent.clientX, e.originalEvent.clientY, true);
+    });
+    m.addTo(map);
+    setaMarkers[r.id] = m;
+  });
+}
+
+/* ═══════════════════════════════════════
+   LÍNEAS LMT
+═══════════════════════════════════════ */
+function dibujarLineaDist(dist, puntos) {
+  if (lineasLayers[dist]) map.removeLayer(lineasLayers[dist]);
+  if (!puntos || puntos.length < 2) return;
+  const color = distColors[dist] || '#63b3ed';
+  const pl = L.polyline(puntos, { color, weight: 2.5, opacity: 0.85 });
+  pl.addTo(map);
+  lineasLayers[dist] = pl;
+}
+
+function agregarPuntoLinea(latlng) {
+  if (!distActivo) {
+    setBadge('⚠️ Seleccioná un distribuidor primero', false);
+    return;
+  }
+  puntosEdicion.push(latlng);
+  actualizarLineaEdicion();
+}
+
+function actualizarLineaEdicion() {
+  if (lineaEditando) map.removeLayer(lineaEditando);
+  if (puntosEdicion.length < 2) return;
+  const color = distColors[distActivo] || '#63b3ed';
+  lineaEditando = L.polyline(puntosEdicion, {
+    color, weight: 2.5, opacity: 1,
+    dashArray: '6 4'
+  });
+  lineaEditando.addTo(map);
+}
+
+async function descargarLinea() {
+  if (!distActivo) { alert('Seleccioná un distribuidor'); return; }
+  if (!puntosEdicion.length && !lineasData[distActivo]) { alert('No hay línea para guardar'); return; }
+
+  const pts = puntosEdicion.length ? puntosEdicion : lineasData[distActivo];
+  if (!pts || pts.length < 2) { alert('La línea necesita al menos 2 puntos'); return; }
+
+  // Borrar línea anterior del distribuidor
+  await sb.from('lmt_lineas').delete().eq('distribuidor', distActivo);
+
+  // Insertar nuevos puntos
+  const rows = pts.map((p, i) => ({
+    distribuidor: distActivo,
+    et: setasData[Object.keys(setasData).find(k => setasData[k].distribuidor === distActivo)]?.et || '',
+    orden: i,
+    lat: p[0],
+    long: p[1],
+    tipo: 'punto'
+  }));
+
+  const { error } = await sb.from('lmt_lineas').insert(rows);
+  if (error) { alert('Error: ' + error.message); return; }
+
+  lineasData[distActivo] = pts;
+  puntosEdicion = [];
+  if (lineaEditando) { map.removeLayer(lineaEditando); lineaEditando = null; }
+  dibujarLineaDist(distActivo, pts);
+  poblarDistribuidores();
+  setBadge(`✅ Línea de ${distActivo} guardada (${pts.length} puntos)`, false);
+  setTimeout(() => hideBadge(), 3000);
+}
+
+async function borrarLineaDist() {
+  if (!distActivo) { alert('Seleccioná un distribuidor'); return; }
+  if (!confirm(`¿Borrar la línea LMT de ${distActivo}?`)) return;
+  await sb.from('lmt_lineas').delete().eq('distribuidor', distActivo);
+  if (lineasLayers[distActivo]) { map.removeLayer(lineasLayers[distActivo]); delete lineasLayers[distActivo]; }
+  delete lineasData[distActivo];
+  puntosEdicion = [];
+  if (lineaEditando) { map.removeLayer(lineaEditando); lineaEditando = null; }
+  poblarDistribuidores();
+  setBadge(`🗑️ Línea de ${distActivo} borrada`, false);
+  setTimeout(() => hideBadge(), 2000);
+}
+
+/* ═══════════════════════════════════════
+   GPS MANUAL
+═══════════════════════════════════════ */
+function corregirSetaGPS() {
+  if (!setaSeleccionada) { alert('Seleccioná una SET primero'); return; }
+  corrigiendoSeta = setaSeleccionada;
+  setMode('ver');
+  setBadge(`📍 Hacé click en el mapa para fijar la ubicación de ${corrigiendoSeta}`, true);
+}
+
+async function guardarPosManual(id, lat, long) {
+  const { error } = await sb.from('lmt_setas').update({ lat, long, fuente: 'manual' }).eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  if (setasData[id]) { setasData[id].lat = lat; setasData[id].long = long; setasData[id].fuente = 'manual'; }
+  renderizarSetas();
+  setBadge(`✅ Ubicación de ${id} actualizada`, false);
+  setTimeout(() => hideBadge(), 2000);
+}
+
+/* ═══════════════════════════════════════
+   SELECCIÓN Y PANEL
+═══════════════════════════════════════ */
+function seleccionarSeta(id) {
+  setaSeleccionada = id;
+  const r = setasData[id];
+  if (!r) return;
+  document.getElementById('seta-info').style.display = 'block';
+  document.getElementById('seta-empty').style.display = 'none';
+  document.getElementById('si-id').innerHTML = `<i class="ti ti-bolt" style="font-size:14px"></i> ${id}`;
+  document.getElementById('si-dir').textContent    = r.direccion || '-';
+  document.getElementById('si-kva').textContent    = r.kva ? r.kva + ' KVA' : '-';
+  document.getElementById('si-cli').textContent    = r.clientes_bd != null ? r.clientes_bd + ' servicios' : '-';
+  document.getElementById('si-dist').textContent   = r.distribuidor || '-';
+  document.getElementById('si-et').textContent     = r.et || '-';
+  document.getElementById('si-fuente').textContent = r.fuente === 'manual' ? '✅ GPS manual' : (r.fuente === 'centroide' ? '📊 Centroide' : '❌ Sin ubicación');
+}
+
+function abrirGMaps() {
+  if (!setaSeleccionada) return;
+  const r = setasData[setaSeleccionada];
+  if (r?.lat && r?.long) window.open(`https://www.google.com/maps?q=${r.lat},${r.long}`, '_blank');
+  else if (r?.direccion) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.direccion + ', Jujuy, Argentina')}`, '_blank');
+}
+
+/* ═══════════════════════════════════════
+   MODOS
+═══════════════════════════════════════ */
+function setMode(m) {
+  modo = m;
+  ['ver','linea','mover'].forEach(id => {
+    document.getElementById('mode-' + id).classList.toggle('on', id === m);
+  });
+  const hints = {
+    ver: 'Hacé click en una SET para ver su información.',
+    linea: 'Hacé click en el mapa o en una SET para agregar puntos a la línea LMT. Guardá con "Guardar línea".',
+    mover: 'Arrastrá una SET para corregir su posición. Se guarda automáticamente.',
+  };
+  document.getElementById('mode-hint').textContent = hints[m];
+
+  // Activar/desactivar drag en markers
+  Object.values(setaMarkers).forEach(mk => {
+    if (m === 'mover') mk.dragging?.enable();
+    else mk.dragging?.disable();
+  });
+
+  map.getContainer().style.cursor = m === 'linea' ? 'crosshair' : '';
+}
+
+function setDistribuidor(d) {
+  distActivo = d;
+  document.getElementById('dist-select').value = d;
+  // Limpiar edición anterior
+  puntosEdicion = [];
+  if (lineaEditando) { map.removeLayer(lineaEditando); lineaEditando = null; }
+  // Si hay línea guardada, cargar sus puntos para editar
+  if (lineasData[d]) puntosEdicion = [...lineasData[d]];
+  renderizarSetas();
+  poblarDistribuidores();
+  // Centrar en las setas del distribuidor
+  if (d) {
+    const pts = Object.values(setasData)
+      .filter(r => r.distribuidor === d && r.lat && r.long)
+      .map(r => [r.lat, r.long]);
+    if (pts.length > 0) {
+      pts.length === 1 ? map.setView(pts[0], 15) : map.fitBounds(pts, { padding: [40, 40] });
+    }
+  }
+}
+
+/* ═══════════════════════════════════════
+   EVENTOS MAPA
+═══════════════════════════════════════ */
+function onMapClick(e) {
+  hideCtxMenu();
+  if (corrigiendoSeta) {
+    guardarPosManual(corrigiendoSeta, e.latlng.lat, e.latlng.lng);
+    corrigiendoSeta = null;
+    hideBadge();
+    return;
+  }
+  if (modo === 'linea') {
+    agregarPuntoLinea([e.latlng.lat, e.latlng.lng]);
+  }
+}
+
+function onMapRightClick(e) {
+  ctxLatLng = e.latlng;
+  ctxMarker = null;
+  mostrarCtxMenu(e.originalEvent.clientX, e.originalEvent.clientY, false);
+  L.DomEvent.stopPropagation(e);
+}
+
+function mostrarCtxMenu(x, y, esSeta) {
+  const m = document.getElementById('ctx-menu');
+  m.style.display = 'block';
+  m.style.left = x + 'px';
+  m.style.top  = y + 'px';
+  m.querySelector('[onclick="ctxVerServiciosSeta()"]').style.display = esSeta ? 'flex' : 'none';
+  m.querySelector('[onclick="ctxEliminarPunto()"]').style.display = modo === 'linea' ? 'flex' : 'none';
+}
+function hideCtxMenu() { document.getElementById('ctx-menu').style.display = 'none'; }
+function ctxAgregarPunto() { if (ctxLatLng && modo === 'linea') agregarPuntoLinea([ctxLatLng.lat, ctxLatLng.lng]); hideCtxMenu(); }
+function ctxEliminarPunto() {
+  if (puntosEdicion.length > 0) {
+    puntosEdicion.pop();
+    actualizarLineaEdicion();
+  }
+  hideCtxMenu();
+}
+function ctxVerServiciosSeta() {
+  if (ctxMarker) seleccionarSeta(ctxMarker);
+  hideCtxMenu();
+}
+
+/* ═══════════════════════════════════════
+   CAPAS TOGGLE
+═══════════════════════════════════════ */
+function toggleCapaSetas() {
+  capaSetas = !capaSetas;
+  document.getElementById('btn-toggle-setas').classList.toggle('active', capaSetas);
+  Object.values(setaMarkers).forEach(m => capaSetas ? map.addLayer(m) : map.removeLayer(m));
+}
+function toggleCapaLineas() {
+  capaLineas = !capaLineas;
+  document.getElementById('btn-toggle-lineas').classList.toggle('active', capaLineas);
+  Object.values(lineasLayers).forEach(l => capaLineas ? map.addLayer(l) : map.removeLayer(l));
+}
+async function toggleCapaServicios() {
+  capaServicios = !capaServicios;
+  document.getElementById('btn-toggle-servicios').classList.toggle('active', capaServicios);
+  if (!capaServicios) { if (serviciosLayer) { map.removeLayer(serviciosLayer); serviciosLayer = null; } return; }
+  setBadge('⏳ Cargando servicios...', false);
+  const { data } = await sb.from('servicios').select('lat, long, seta').not('lat','is',null).not('long','is',null);
+  if (!data) { hideBadge(); return; }
+  const pts = data.map(r => L.circleMarker([r.lat, r.long], {
+    radius: 2, color: '#4a5568', fillColor: '#718096', fillOpacity: 0.4, weight: 0
+  }));
+  serviciosLayer = L.layerGroup(pts).addTo(map);
+  hideBadge();
+}
+
+/* ═══════════════════════════════════════
+   EXPORTAR GEOJSON
+═══════════════════════════════════════ */
+function exportarGeoJSON() {
+  const features = [];
+  // Setas como puntos
+  Object.values(setasData).forEach(r => {
+    if (!r.lat || !r.long) return;
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [r.long, r.lat] },
+      properties: { id: r.id, tipo: r.tipo, distribuidor: r.distribuidor, et: r.et, kva: r.kva, fuente: r.fuente }
+    });
+  });
+  // Líneas
+  Object.entries(lineasData).forEach(([dist, pts]) => {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: pts.map(p => [p[1], p[0]]) },
+      properties: { distribuidor: dist, tipo: 'LMT' }
+    });
+  });
+  const geojson = { type: 'FeatureCollection', features };
+  const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'lmt_jujuy.geojson';
+  a.click();
+}
+
+/* ═══════════════════════════════════════
+   BADGE
+═══════════════════════════════════════ */
+function setBadge(msg, drawing) {
+  const b = document.getElementById('map-badge');
+  b.textContent = msg;
+  b.style.display = 'flex';
+  b.className = 'map-badge' + (drawing ? ' drawing' : '');
+}
+function hideBadge() {
+  document.getElementById('map-badge').style.display = 'none';
+}
+
+/* ═══════════════════════════════════════
+   IMPORTAR SHAPEFILE (ZIP) — POSGAR98 → WGS84
+═══════════════════════════════════════ */
+async function importarShapefile(input) {
+  const file = input.files[0]; if (!file) return;
+  const log   = document.getElementById('shp-log');
+  const pgbar = document.getElementById('shp-pgbar');
+  const pgfill= document.getElementById('shp-pgfill');
+  log.style.display = 'block'; log.innerHTML = '';
+  pgbar.style.display = 'block'; pgfill.style.width = '3%';
+
+  function addLog(m) { log.innerHTML += m + '<br>'; log.scrollTop = log.scrollHeight; }
+
+  try {
+    addLog('📦 Leyendo ZIP...');
+    const zip = await JSZip.loadAsync(file);
+
+    // Encontrar los archivos dentro del zip (puede estar en subcarpeta)
+    const entries = Object.values(zip.files);
+    const find = ext => entries.find(e => e.name.toLowerCase().endsWith(ext) && !e.dir);
+
+    const shpEntry = find('.shp');
+    const dbfEntry = find('.dbf');
+    if (!shpEntry || !dbfEntry) { addLog('❌ No se encontró .shp o .dbf en el ZIP'); return; }
+
+    addLog(`✅ ${shpEntry.name} encontrado`);
+    pgfill.style.width = '10%';
+
+    const shpBuf = await shpEntry.async('arraybuffer');
+    const dbfBuf = await dbfEntry.async('arraybuffer');
+    pgfill.style.width = '20%';
+
+    // ── Leer DBF ──
+    addLog('📋 Leyendo atributos (DBF)...');
+    const dbfRecords = leerDBF(dbfBuf);
+    addLog(`   ${dbfRecords.length} registros`);
+    pgfill.style.width = '35%';
+
+    // ── Leer SHP ──
+    addLog('📍 Leyendo coordenadas (SHP)...');
+    const shpCoords = leerSHP(shpBuf);
+    addLog(`   ${shpCoords.length} puntos`);
+    pgfill.style.width = '50%';
+
+    // ── Convertir coordenadas POSGAR98 → WGS84 ──
+    addLog('🔄 Convirtiendo POSGAR 98 → WGS84...');
+    const convertidos = [];
+    let ok = 0, fuera = 0;
+
+    for (let i = 0; i < dbfRecords.length; i++) {
+      const rec = dbfRecords[i];
+      const [x, y] = shpCoords[i] || [null, null];
+      if (x == null) { fuera++; continue; }
+
+      const { lat, lon } = posgar98ToWGS84(x, y);
+
+      // Validar que esté en Argentina / Jujuy
+      if (lat < -55 || lat > -21 || lon < -75 || lon > -53) { fuera++; continue; }
+
+      // El campo 'name' tiene el ID de la SET (SE1234, etc.)
+      const id = (rec['name'] || rec['NAME'] || '').trim();
+      const tipo = (rec['gna_termge'] || rec['GNA_TERMGE'] || '').trim();
+      const estado = (rec['fun_estado'] || rec['FUN_ESTADO'] || '').trim();
+      if (!id) { fuera++; continue; }
+
+      convertidos.push({ id, tipo, estado, lat, lon });
+      ok++;
+    }
+
+    addLog(`✅ ${ok} puntos válidos, ${fuera} fuera de rango`);
+    pgfill.style.width = '65%';
+
+    // ── Upsert a Supabase ──
+    // Estrategia: actualizar lat/long/fuente en lmt_setas si ya existe,
+    // o insertar nuevo con lo que tenemos del SHP
+    addLog(`💾 Guardando en Supabase...`);
+
+    const BATCH = 300;
+    let done = 0;
+    for (let i = 0; i < convertidos.length; i += BATCH) {
+      const batch = convertidos.slice(i, i + BATCH).map(r => ({
+        id: r.id,
+        // Solo actualizar lat/long/fuente — preservar distribuidor/kva/etc del Excel
+        lat: r.lat,
+        long: r.lon,
+        fuente: 'gis_shapefile',
+        tipo: r.tipo || 'SE',
+        estado_red: r.estado,
+        // Campos mínimos para insert si no existe
+        distribuidor: null,
+        et: null,
+        kva: null,
+        clientes_bd: 0,
+        direccion: null,
+      }));
+
+      const { error } = await sb.from('lmt_setas').upsert(batch, {
+        onConflict: 'id',
+        ignoreDuplicates: false,   // actualiza si ya existe
+      });
+
+      if (error) { addLog('❌ Lote ' + (Math.floor(i/BATCH)+1) + ': ' + error.message); break; }
+      done += batch.length;
+      pgfill.style.width = (65 + Math.round(done / convertidos.length * 30)) + '%';
+      addLog(`📥 ${done.toLocaleString()} / ${convertidos.length.toLocaleString()}`);
+    }
+
+    pgfill.style.width = '100%';
+    addLog(`🎉 ¡Listo! ${done.toLocaleString()} SETs con GPS exacto cargadas`);
+    addLog(`📊 Tipos: ${[...new Set(convertidos.map(r=>r.tipo))].join(', ')}`);
+
+    // Recargar datos del mapa
+    await cargarSetasDeSupabase();
+    setTimeout(() => { pgbar.style.display = 'none'; }, 1000);
+
+  } catch(err) {
+    addLog('❌ Error: ' + err.message);
+    console.error(err);
+  }
+  input.value = '';
+}
+
+/* ── Leer DBF sin dependencias ── */
+function leerDBF(buf) {
+  const dv = new DataView(buf);
+  const nRecords   = dv.getUint32(4, true);
+  const headerSize = dv.getUint16(8, true);
+  const recordSize = dv.getUint16(10, true);
+
+  // Leer definición de campos
+  const fields = [];
+  let offset = 32;
+  while (offset < headerSize - 1) {
+    const terminator = dv.getUint8(offset);
+    if (terminator === 0x0D) break;
+    let name = '';
+    for (let j = 0; j < 11; j++) {
+      const c = dv.getUint8(offset + j);
+      if (c !== 0) name += String.fromCharCode(c);
+    }
+    name = name.trim();
+    const type   = String.fromCharCode(dv.getUint8(offset + 11));
+    const length = dv.getUint8(offset + 16);
+    fields.push({ name, type, length });
+    offset += 32;
+  }
+
+  // Leer registros
+  const decoder = new TextDecoder('latin1');
+  const records = [];
+  let recOffset = headerSize;
+
+  for (let i = 0; i < nRecords; i++) {
+    recOffset++; // deletion flag
+    const row = {};
+    for (const f of fields) {
+      const bytes = new Uint8Array(buf, recOffset, f.length);
+      row[f.name] = decoder.decode(bytes).trim();
+      recOffset += f.length;
+    }
+    records.push(row);
+  }
+  return records;
+}
+
+/* ── Leer SHP puntos sin dependencias ── */
+function leerSHP(buf) {
+  const dv = new DataView(buf);
+  const coords = [];
+  let offset = 100; // saltar header
+
+  while (offset < buf.byteLength - 8) {
+    const contentLen = dv.getInt32(offset + 4) * 2; // big-endian, en palabras de 16 bit
+    const shapeType  = dv.getInt32(offset + 8, true); // little-endian
+    if (shapeType === 1) { // Point
+      const x = dv.getFloat64(offset + 12, true);
+      const y = dv.getFloat64(offset + 20, true);
+      coords.push([x, y]);
+    } else {
+      coords.push([null, null]);
+    }
+    offset += 8 + contentLen;
+  }
+  return coords;
+}
+
+/* ── Conversión POSGAR 98 / Argentina 3 → WGS84 ──
+   EPSG:22173: TM, meridian=-66, lat_origin=-90, FE=3500000, FN=0, k=1, GRS80
+── */
+function posgar98ToWGS84(X, Y) {
+  const a  = 6378137.0;
+  const f  = 1 / 298.257222101;
+  const e2 = 2*f - f*f;
+  const k0 = 1.0;
+  const lon0 = -66.0 * Math.PI / 180;
+  const E0 = 3500000.0;
+
+  // Arco meridional desde ecuador hasta lat=-90° (lat_origin)
+  const phi0 = -90.0 * Math.PI / 180;
+  const M0 = a * (
+    (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256) * phi0
+    - (3*e2/8 + 3*e2*e2/32 + 45*e2*e2*e2/1024) * Math.sin(2*phi0)
+    + (15*e2*e2/256 + 45*e2*e2*e2/1024) * Math.sin(4*phi0)
+    - (35*e2*e2*e2/3072) * Math.sin(6*phi0)
+  );
+
+  const e1 = (1 - Math.sqrt(1-e2)) / (1 + Math.sqrt(1-e2));
+  const M  = Y + M0;   // ajuste por lat_origin=-90
+  const mu = M / (a * (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256));
+
+  const phi1 = mu
+    + e1*(3/2 - 27*e1*e1/32)*Math.sin(2*mu)
+    + e1*e1*(21/16 - 55*e1*e1/32)*Math.sin(4*mu)
+    + e1*e1*e1*(151/96)*Math.sin(6*mu)
+    + e1*e1*e1*e1*(1097/512)*Math.sin(8*mu);
+
+  const N1 = a / Math.sqrt(1 - e2*Math.sin(phi1)*Math.sin(phi1));
+  const T1 = Math.tan(phi1)*Math.tan(phi1);
+  const C1 = e2/(1-e2)*Math.cos(phi1)*Math.cos(phi1);
+  const R1 = a*(1-e2) / Math.pow(1-e2*Math.sin(phi1)*Math.sin(phi1), 1.5);
+  const D  = (X - E0) / (N1*k0);
+
+  const lat = phi1 - (N1*Math.tan(phi1)/R1)*(
+    D*D/2
+    - (5 + 3*T1 + 10*C1 - 4*C1*C1 - 9*e2/(1-e2))*D*D*D*D/24
+    + (61 + 90*T1 + 298*C1 + 45*T1*T1 - 252*e2/(1-e2) - 3*C1*C1)*D*D*D*D*D*D/720
+  );
+
+  const lon = lon0 + (
+    D
+    - (1 + 2*T1 + C1)*D*D*D/6
+    + (5 - 2*C1 + 28*T1 - 3*C1*C1 + 8*e2/(1-e2) + 24*T1*T1)*D*D*D*D*D/120
+  ) / Math.cos(phi1);
+
+  return {
+    lat: Math.round(lat * 180/Math.PI * 1e6) / 1e6,
+    lon: Math.round(lon * 180/Math.PI * 1e6) / 1e6,
+  };
+}
+
+/* ═══════════════════════════════════════
+   GEORREFERENCIACIÓN DE PLANOS
+   Flujo: subís imagen → marcás 4 puntos en imagen y en mapa
+   → calculamos transformación afín → L.imageOverlay posicionada
+═══════════════════════════════════════ */
+let georefMap = null;
+let georefImagenURL = null;
+let georefImagenNombre = '';
+let georefPuntos = [];       // [{imgX, imgY, lat, lng}, ...] — 4 puntos de control
+let georefEtapa = null;      // 'imagen' | 'mapa' | null
+let georefPuntoActivo = -1;  // índice del punto que se está colocando
+let planosGuardados = [];    // [{nombre, bounds, url, layer}]
+let georefOverlay = null;    // overlay temporal en el mapa de georef
+let imgNaturalW = 0, imgNaturalH = 0;
+
+function abrirGeoref() {
+  document.getElementById('georef-overlay').style.display = 'flex';
+  if (!georefMap) {
+    georefMap = L.map('georef-map', { zoomControl: true }).setView([-24.19, -65.29], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(georefMap);
+    georefMap.on('click', onGeorefMapClick);
+  }
+  // Aplicar planos ya guardados también en georef-map
+  planosGuardados.forEach(p => { if (p.georefLayer) georefMap.addLayer(p.georefLayer); });
+  renderCPList();
+}
+
+function cerrarGeoref() {
+  document.getElementById('georef-overlay').style.display = 'none';
+}
+
+function cargarImagenPlano(input) {
+  const file = input.files[0]; if (!file) return;
+  georefImagenNombre = file.name.replace(/\.[^.]+$/, '');
+  const reader = new FileReader();
+  reader.onload = e => {
+    georefImagenURL = e.target.result;
+    const img = document.getElementById('plano-preview');
+    img.src = georefImagenURL;
+    img.onload = () => {
+      imgNaturalW = img.naturalWidth;
+      imgNaturalH = img.naturalHeight;
+      document.getElementById('plano-preview-wrap').style.display = 'flex';
+      // Habilitar click en la imagen
+      document.getElementById('plano-preview-container').onclick = onImageClick;
+    };
+    georefPuntos = [null, null, null, null]; // 4 slots
+    georefPuntoActivo = -1;
+    renderCPList();
+    document.getElementById('georef-status').textContent = 'Imagen cargada — seleccioná el primer punto en la imagen';
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function renderCPList() {
+  const list = document.getElementById('cp-list');
+  if (!georefImagenURL) {
+    list.innerHTML = '<div style="font-size:11px;color:#4a5568;text-align:center;padding:12px">Cargá una imagen primero</div>';
+    return;
+  }
+  const cpColors = ['#f6ad55','#68d391','#63b3ed','#fc8181'];
+  list.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const p = georefPuntos[i];
+    const div = document.createElement('div');
+    div.className = 'cp-row';
+    const isActive = georefPuntoActivo === i;
+    div.style.background = isActive ? '#1e2d3a' : '';
+    div.innerHTML = `
+      <div class="cp-num" style="background:${cpColors[i]}33;color:${cpColors[i]};border:1px solid ${cpColors[i]}44">${i+1}</div>
+      <div class="cp-coords">
+        ${p?.imgX != null ? `Img: (${Math.round(p.imgX)}, ${Math.round(p.imgY)})` : '<span style="color:#4a5568">Click en imagen</span>'}
+        <br>
+        ${p?.lat != null ? `Mapa: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : '<span style="color:#4a5568">Click en mapa</span>'}
+      </div>
+      <div class="cp-status">
+        ${p?.imgX != null && p?.lat != null ? '✅' : (p?.imgX != null ? '📍→🗺️' : '○')}
+      </div>
+      <button onclick="seleccionarPunto(${i})" style="padding:3px 7px;font-size:10px;border:1px solid #2d3748;border-radius:4px;background:${isActive?'#2b5797':'#1e2535'};color:${isActive?'#90cdf4':'#718096'};cursor:pointer;font-family:inherit">
+        ${isActive ? 'Activo' : 'Editar'}
+      </button>`;
+    list.appendChild(div);
+  }
+  // Mostrar botón aplicar si tenemos 4 puntos completos
+  const completos = georefPuntos.filter(p => p?.imgX != null && p?.lat != null).length;
+  document.getElementById('btn-aplicar-georef').style.display = completos >= 4 ? 'inline-flex' : 'none';
+  document.getElementById('georef-status').textContent =
+    completos >= 4 ? '✅ 4 puntos listos — podés aplicar' :
+    `${completos}/4 puntos completos`;
+  // Dibujar puntos en la imagen
+  dibujarPuntosEnImagen();
+}
+
+function seleccionarPunto(i) {
+  georefPuntoActivo = i;
+  if (!georefPuntos[i]) georefPuntos[i] = {};
+  renderCPList();
+  document.getElementById('georef-status').textContent =
+    georefPuntos[i]?.imgX != null
+      ? `Punto ${i+1}: ahora hacé click en el MAPA para definir su posición real`
+      : `Punto ${i+1}: hacé click en la IMAGEN para marcarlo`;
+}
+
+function onImageClick(e) {
+  if (georefPuntoActivo < 0) { seleccionarPunto(0); return; }
+  const container = document.getElementById('plano-preview-container');
+  const rect = container.getBoundingClientRect();
+  const relX = (e.clientX - rect.left) / rect.width;
+  const relY = (e.clientY - rect.top) / rect.height;
+  // Coordenadas en píxeles naturales de la imagen
+  const imgX = relX * imgNaturalW;
+  const imgY = relY * imgNaturalH;
+  if (!georefPuntos[georefPuntoActivo]) georefPuntos[georefPuntoActivo] = {};
+  georefPuntos[georefPuntoActivo].imgX = imgX;
+  georefPuntos[georefPuntoActivo].imgY = imgY;
+  document.getElementById('georef-status').textContent =
+    `Punto ${georefPuntoActivo+1} marcado en imagen → ahora hacé click en el MAPA en el mismo lugar`;
+  renderCPList();
+}
+
+function onGeorefMapClick(e) {
+  if (georefPuntoActivo < 0) return;
+  const p = georefPuntos[georefPuntoActivo];
+  if (!p || p.imgX == null) {
+    document.getElementById('georef-status').textContent = `Primero marcá el punto ${georefPuntoActivo+1} en la IMAGEN`;
+    return;
+  }
+  p.lat = e.latlng.lat;
+  p.lng = e.latlng.lng;
+  // Agregar marker en georef-map
+  const cpColors = ['#f6ad55','#68d391','#63b3ed','#fc8181'];
+  L.circleMarker([p.lat, p.lng], {
+    radius: 7, color: cpColors[georefPuntoActivo], fillColor: cpColors[georefPuntoActivo],
+    fillOpacity: 0.8, weight: 2
+  }).bindTooltip(`Punto ${georefPuntoActivo+1}`, { permanent: true, direction: 'top' }).addTo(georefMap);
+
+  // Avanzar al siguiente punto automáticamente
+  const next = georefPuntoActivo + 1;
+  if (next < 4 && !georefPuntos[next]?.lat) {
+    georefPuntoActivo = next;
+    if (!georefPuntos[next]) georefPuntos[next] = {};
+  }
+  renderCPList();
+}
+
+function dibujarPuntosEnImagen() {
+  const canvas = document.getElementById('plano-canvas');
+  const container = document.getElementById('plano-preview-container');
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cpColors = ['#f6ad55','#68d391','#63b3ed','#fc8181'];
+  georefPuntos.forEach((p, i) => {
+    if (!p?.imgX) return;
+    const x = (p.imgX / imgNaturalW) * canvas.width;
+    const y = (p.imgY / imgNaturalH) * canvas.height;
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = cpColors[i] + '99';
+    ctx.fill();
+    ctx.strokeStyle = cpColors[i];
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(i + 1, x, y);
+  });
+}
+
+/* ── TRANSFORMACIÓN AFÍN (4 puntos imagen → coordenadas geo) ── */
+function calcularTransformacion() {
+  // Usa los 4 puntos para estimar una transformación afín
+  // Devuelve una función imgToGeo(imgX, imgY) → {lat, lng}
+  const pts = georefPuntos.filter(p => p?.imgX != null && p?.lat != null);
+  if (pts.length < 3) return null;
+
+  // Resolver sistema de ecuaciones para transformación afín
+  // lat = a*x + b*y + c
+  // lng = d*x + e*y + f
+  // Con 4 puntos, usar mínimos cuadrados
+  const n = pts.length;
+  let A = [], bLat = [], bLng = [];
+  pts.forEach(p => {
+    A.push([p.imgX, p.imgY, 1]);
+    bLat.push(p.lat);
+    bLng.push(p.lng);
+  });
+
+  // Pseudo-inversa (mínimos cuadrados): coef = (A^T A)^-1 A^T b
+  function leastSquares(A, b) {
+    // Para 3+ puntos con 3 incógnitas
+    const At = A[0].map((_, j) => A.map(r => r[j])); // transpuesta
+    // AtA
+    const AtA = At.map(r => At[0].map((_, j) => r.reduce((s, _, k) => s + r[k] * At[k][j], 0)));
+    // Atb
+    const Atb = At.map(r => r.reduce((s, v, i) => s + v * b[i], 0));
+    // Resolver 3x3
+    return solve3x3(AtA, Atb);
+  }
+
+  function solve3x3(A, b) {
+    const [a00,a01,a02] = A[0], [a10,a11,a12] = A[1], [a20,a21,a22] = A[2];
+    const det = a00*(a11*a22-a12*a21) - a01*(a10*a22-a12*a20) + a02*(a10*a21-a11*a20);
+    if (Math.abs(det) < 1e-15) return null;
+    return [
+      (b[0]*(a11*a22-a12*a21) - a01*(b[1]*a22-a12*b[2]) + a02*(b[1]*a21-a11*b[2])) / det,
+      (a00*(b[1]*a22-a12*b[2]) - b[0]*(a10*a22-a12*a20) + a02*(a10*b[2]-b[1]*a20)) / det,
+      (a00*(a11*b[2]-b[1]*a21) - a01*(a10*b[2]-b[1]*a20) + b[0]*(a10*a21-a11*a20)) / det,
+    ];
+  }
+
+  const cLat = leastSquares(A, bLat);
+  const cLng = leastSquares(A, bLng);
+  if (!cLat || !cLng) return null;
+
+  return (imgX, imgY) => ({
+    lat: cLat[0]*imgX + cLat[1]*imgY + cLat[2],
+    lng: cLng[0]*imgX + cLng[1]*imgY + cLng[2],
+  });
+}
+
+function aplicarGeoref() {
+  const transform = calcularTransformacion();
+  if (!transform) { alert('No hay suficientes puntos de control'); return; }
+
+  // Calcular las 4 esquinas de la imagen en coordenadas geo
+  const tl = transform(0, 0);
+  const tr = transform(imgNaturalW, 0);
+  const bl = transform(0, imgNaturalH);
+  const br = transform(imgNaturalW, imgNaturalH);
+
+  // Leaflet L.imageOverlay usa un bounds rectangulares (lat/lng min/max)
+  // Para imágenes rotadas necesitamos el plugin distortableImage,
+  // pero para planos aproximadamente orientados al norte, el bounds simple es suficiente
+  const minLat = Math.min(tl.lat, tr.lat, bl.lat, br.lat);
+  const maxLat = Math.max(tl.lat, tr.lat, bl.lat, br.lat);
+  const minLng = Math.min(tl.lng, tr.lng, bl.lng, br.lng);
+  const maxLng = Math.max(tl.lng, tr.lng, bl.lng, br.lng);
+
+  const bounds = [[minLat, minLng], [maxLat, maxLng]];
+  const opacity = parseInt(document.getElementById('overlay-opacity').value) / 100;
+
+  // Agregar al mapa principal
+  const layer = L.imageOverlay(georefImagenURL, bounds, { opacity, interactive: false });
+  layer.addTo(map);
+
+  // También en georef-map para referencia
+  const georefLayer = L.imageOverlay(georefImagenURL, bounds, { opacity: 0.5, interactive: false });
+  georefLayer.addTo(georefMap);
+
+  // Guardar en lista de planos
+  planosGuardados.push({
+    nombre: georefImagenNombre,
+    bounds, layer, georefLayer,
+    url: georefImagenURL
+  });
+
+  actualizarListaPlanos();
+  cerrarGeoref();
+
+  // Centrar mapa principal en el plano
+  map.fitBounds(bounds, { padding: [20, 20] });
+  setBadge(`✅ Plano "${georefImagenNombre}" superpuesto`, false);
+  setTimeout(() => hideBadge(), 3000);
+}
+
+function ajustarOpacidad(val) {
+  document.getElementById('opacity-val').textContent = val + '%';
+  // Ajustar todos los planos activos
+  planosGuardados.forEach(p => {
+    if (p.layer) p.layer.setOpacity(parseInt(val) / 100);
+  });
+}
+
+function actualizarListaPlanos() {
+  const el = document.getElementById('planos-list');
+  if (!planosGuardados.length) { el.innerHTML = '<span style="color:#4a5568">Ninguno</span>'; return; }
+  el.innerHTML = '';
+  planosGuardados.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #2d3748;font-size:11px';
+    div.innerHTML = `
+      <span style="flex:1;color:#a0aec0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nombre}</span>
+      <button onclick="togglePlano(${i})" style="padding:2px 6px;font-size:10px;border:1px solid #2d3748;border-radius:3px;background:#1e2535;color:#718096;cursor:pointer;font-family:inherit" id="btn-plano-${i}">👁️</button>
+      <button onclick="quitarPlano(${i})" style="padding:2px 6px;font-size:10px;border:1px solid #3a1a1a;border-radius:3px;background:#1e2535;color:#fc8181;cursor:pointer;font-family:inherit">✕</button>`;
+    el.appendChild(div);
+  });
+}
+
+function togglePlano(i) {
+  const p = planosGuardados[i];
+  if (!p) return;
+  if (map.hasLayer(p.layer)) { map.removeLayer(p.layer); }
+  else { map.addLayer(p.layer); }
+}
+
+function quitarPlano(i) {
+  const p = planosGuardados[i];
+  if (!p) return;
+  if (p.layer && map.hasLayer(p.layer)) map.removeLayer(p.layer);
+  planosGuardados.splice(i, 1);
+  actualizarListaPlanos();
+}
+
+/* ═══════════════════════════════════════
+   ARRANQUE
+═══════════════════════════════════════ */
+init();
+</script>
+</body>
+</html>
