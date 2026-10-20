@@ -1027,10 +1027,18 @@ async function importarShapefile(input) {
     // o insertar nuevo con lo que tenemos del SHP
     addLog(`💾 Guardando en Supabase...`);
 
+    // Deduplicar por ID — quedarse con el primero de cada ID
+    const vistos = new Set();
+    const unicos = convertidos.filter(r => {
+      if (vistos.has(r.id)) return false;
+      vistos.add(r.id); return true;
+    });
+    addLog(`🔍 ${convertidos.length - unicos.length} duplicados eliminados → ${unicos.length} únicos`);
+
     const BATCH = 300;
     let done = 0;
-    for (let i = 0; i < convertidos.length; i += BATCH) {
-      const batch = convertidos.slice(i, i + BATCH).map(r => ({
+    for (let i = 0; i < unicos.length; i += BATCH) {
+      const batch = unicos.slice(i, i + BATCH).map(r => ({
         id: r.id,
         // Solo actualizar lat/long/fuente — preservar distribuidor/kva/etc del Excel
         lat: r.lat,
@@ -1053,13 +1061,13 @@ async function importarShapefile(input) {
 
       if (error) { addLog('❌ Lote ' + (Math.floor(i/BATCH)+1) + ': ' + error.message); break; }
       done += batch.length;
-      pgfill.style.width = (65 + Math.round(done / convertidos.length * 30)) + '%';
-      addLog(`📥 ${done.toLocaleString()} / ${convertidos.length.toLocaleString()}`);
+      pgfill.style.width = (65 + Math.round(done / unicos.length * 30)) + '%';
+      addLog(`📥 ${done.toLocaleString()} / ${unicos.length.toLocaleString()}`);
     }
 
     pgfill.style.width = '100%';
     addLog(`🎉 ¡Listo! ${done.toLocaleString()} SETs con GPS exacto cargadas`);
-    addLog(`📊 Tipos: ${[...new Set(convertidos.map(r=>r.tipo))].join(', ')}`);
+    addLog(`📊 Tipos: ${[...new Set(unicos.map(r=>r.tipo))].join(', ')}`);
 
     // Recargar datos del mapa
     await cargarSetasDeSupabase();
