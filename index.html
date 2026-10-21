@@ -51,7 +51,7 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
 .dist-count{font-size:10px;color:#63b3ed;font-weight:700}
 
 /* Stats bar */
-.stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px}
 .stat-box{background:#0f1117;border-radius:6px;padding:7px 9px;border:1px solid #2d3748}
 .stat-num{font-size:17px;font-weight:700;color:#63b3ed}
 .stat-lbl{font-size:10px;color:#718096}
@@ -131,6 +131,12 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
     <button class="tbtn" id="btn-toggle-setas" onclick="toggleCapaSetas()">
       <i class="ti ti-bolt"></i> SETs
     </button>
+    <button class="tbtn active" id="btn-toggle-camaras" onclick="toggleCapaCamaras()">
+      <i class="ti ti-square-rounded"></i> Cámaras
+    </button>
+    <button class="tbtn active" id="btn-toggle-estaciones" onclick="toggleCapaEstaciones()">
+      <i class="ti ti-building-factory-2"></i> Estaciones
+    </button>
     <button class="tbtn" id="btn-toggle-lineas" onclick="toggleCapaLineas()">
       <i class="ti ti-vector-bezier"></i> LMT
     </button>
@@ -183,6 +189,7 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
     <div class="panel-section" id="stats-sec" style="display:none">
       <div class="stats-bar">
         <div class="stat-box"><div class="stat-num" id="st-setas">0</div><div class="stat-lbl">SETs</div></div>
+        <div class="stat-box"><div class="stat-num" id="st-cam">0</div><div class="stat-lbl">Cám.</div></div>
         <div class="stat-box"><div class="stat-num" id="st-secc">0</div><div class="stat-lbl">Secc.</div></div>
         <div class="stat-box"><div class="stat-num" id="st-dist">0</div><div class="stat-lbl">Distr.</div></div>
       </div>
@@ -226,9 +233,10 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
 
     <!-- INFO SET SELECCIONADA -->
     <div class="panel-section" style="flex:1;overflow-y:auto">
-      <div class="ps-title"><i class="ti ti-info-circle"></i> SET seleccionada</div>
+      <div class="ps-title"><i class="ti ti-info-circle"></i> Elemento seleccionado</div>
       <div class="seta-info" id="seta-info">
         <div class="si-title" id="si-id">—</div>
+        <div class="si-row"><span class="si-lbl">Tipo</span><span class="si-val" id="si-tipo">-</span></div>
         <div class="si-row"><span class="si-lbl">Dirección</span><span class="si-val" id="si-dir">-</span></div>
         <div class="si-row"><span class="si-lbl">KVA</span><span class="si-val" id="si-kva">-</span></div>
         <div class="si-row"><span class="si-lbl">Clientes BD</span><span class="si-val" id="si-cli">-</span></div>
@@ -265,6 +273,10 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
       <div class="leg-title">Referencias</div>
       <div class="leg-row"><div class="leg-dot" style="background:#63b3ed"></div> SET (centroide)</div>
       <div class="leg-row"><div class="leg-dot" style="background:#68d391"></div> SET (GPS manual)</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#b794f4;border-radius:3px"></div> Cámara</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#4fd1c5;border-radius:2px"></div> Est. de Rebaje</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#fc8181;border-radius:3px"></div> Est. Transformadora</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#f6e05e;border-color:#744210"></div> Central de Generación</div>
       <div class="leg-row"><div class="leg-dot" style="background:#f6ad55;width:8px;height:8px;border-radius:2px"></div> Seccionador</div>
       <div class="leg-row"><div class="leg-line" style="background:#63b3ed"></div> Línea LMT trazada</div>
       <div class="leg-row"><div class="leg-line" style="background:#68d391;height:2px;border-top:2px dashed #68d391;background:none"></div> LMT en edición</div>
@@ -382,6 +394,7 @@ let setaSeleccionada = null;
 let ctxLatLng = null;
 let ctxMarker = null;
 let capaSetas = true, capaLineas = true, capaServicios = false;
+let capaCams = true, capaEst = true;
 let serviciosLayer = null;
 let corrigiendoSeta = null;
 
@@ -419,7 +432,7 @@ function initMap() {
 async function cargarSetasDeSupabase() {
   const { data } = await sb.from('lmt_setas').select('*');
   if (!data || !data.length) return;
-  data.forEach(r => { setasData[r.id] = r; });
+  data.forEach(r => { if (r.tipo === 'SET') r.tipo = 'SE'; setasData[r.id] = r; });
   asignarColoresDistribuidores();
   renderizarSetas();
   poblarDistribuidores();
@@ -512,8 +525,12 @@ async function cargarExcelSetas(input) {
       // Preparar rows para upsert
       const upsertRows = parsed.map(r => {
         const c = centroideMap[r.id];
+        const prev = setasData[r.id];
         let lat = null, long = null, fuente = 'sin_ubicacion';
-        if (c && c.n > 0) {
+        if (prev && (prev.fuente === 'gis_shapefile' || prev.fuente === 'manual') && prev.lat && prev.long) {
+          lat = prev.lat; long = prev.long; fuente = prev.fuente;   // conservar GPS exacto
+          conCentroide++;
+        } else if (c && c.n > 0) {
           lat   = Math.round((c.sumLat / c.n) * 1e6) / 1e6;
           long  = Math.round((c.sumLng / c.n) * 1e6) / 1e6;
           fuente = 'centroide';
@@ -525,7 +542,7 @@ async function cargarExcelSetas(input) {
           id: r.id,
           distribuidor: r.distribuidor,
           et: r.et,
-          tipo: r.tipo,
+          tipo: ['CAM','ER','ET','CG'].includes(prev?.tipo) ? prev.tipo : r.tipo,
           direccion: r.dir,
           kva: r.kva,
           clientes_bd: c?.n || 0,
@@ -613,42 +630,61 @@ function actualizarStats() {
   const all = Object.values(setasData);
   document.getElementById('st-setas').textContent = all.filter(r => r.tipo === 'SE').length;
   document.getElementById('st-secc').textContent  = all.filter(r => r.tipo === 'S').length;
+  document.getElementById('st-cam').textContent   = all.filter(r => r.tipo === 'CAM').length;
   document.getElementById('st-dist').textContent  = distList.length;
 }
 
 /* ═══════════════════════════════════════
    RENDERIZAR SETAS EN MAPA
 ═══════════════════════════════════════ */
+const TIPO_LABEL = { SE:'SET', S:'Seccionador', CAM:'Cámara', ER:'Est. de Rebaje', ET:'Est. Transformadora', CG:'Central de Generación' };
+function catTipo(t) {
+  if (t === 'CAM') return 'cam';
+  if (t === 'ER' || t === 'ET' || t === 'CG') return 'est';
+  if (t === 'S') return 'secc';
+  return 'set';
+}
+function capaVisible(cat) {
+  return cat === 'cam' ? capaCams : cat === 'est' ? capaEst : capaSetas;
+}
+function iconoTipo(r, color) {
+  const esManual = r.fuente === 'manual';
+  const base = 'border:2px solid rgba(255,255,255,.75);box-shadow:0 1px 5px rgba(0,0,0,.5)';
+  switch (r.tipo) {
+    case 'CAM': return L.divIcon({ className:'', iconAnchor:[6,6],
+      html:`<div style="width:12px;height:12px;border-radius:3px;background:#b794f4;${base}"></div>` });
+    case 'ER': return L.divIcon({ className:'', iconAnchor:[8,8],
+      html:`<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:15px solid #4fd1c5;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))"></div>` });
+    case 'ET': return L.divIcon({ className:'', iconAnchor:[8,8],
+      html:`<div style="width:16px;height:16px;border-radius:4px;background:#fc8181;${base}"></div>` });
+    case 'CG': return L.divIcon({ className:'', iconAnchor:[8,8],
+      html:`<div style="width:16px;height:16px;border-radius:50%;background:#f6e05e;border:3px solid #744210;box-shadow:0 1px 5px rgba(0,0,0,.5)"></div>` });
+    case 'S': return L.divIcon({ className:'', iconAnchor:[4,4],
+      html:`<div style="width:8px;height:8px;background:#f6ad55;border:1.5px solid rgba(255,255,255,.6);box-shadow:0 1px 3px rgba(0,0,0,.4);transform:rotate(45deg)"></div>` });
+    default: return L.divIcon({ className:'', iconAnchor:[6,6],
+      html:`<div style="width:12px;height:12px;border-radius:50%;background:${esManual ? '#68d391' : color};${base}"></div>` });
+  }
+}
+
 function renderizarSetas() {
   // Limpiar markers viejos
   Object.values(setaMarkers).forEach(m => map.removeLayer(m));
   setaMarkers = {};
 
-  const filtrado = distActivo
-    ? Object.values(setasData).filter(r => r.distribuidor === distActivo)
-    : Object.values(setasData);
-
-  filtrado.forEach(r => {
+  Object.values(setasData).forEach(r => {
     if (!r.lat || !r.long) return;
-    const color = distColors[r.distribuidor] || '#63b3ed';
-    const esSeta = r.tipo === 'SE';
-    const esManual = r.fuente === 'manual';
+    const cat = catTipo(r.tipo);
+    // El filtro por distribuidor no oculta cámaras/estaciones que no tienen distribuidor asignado
+    if (distActivo && r.distribuidor !== distActivo && !((cat === 'cam' || cat === 'est') && !r.distribuidor)) return;
 
-    const icon = esSeta
-      ? L.divIcon({
-          className: '',
-          html: `<div style="width:12px;height:12px;border-radius:50%;background:${esManual ? '#68d391' : color};border:2px solid rgba(255,255,255,.7);box-shadow:0 1px 5px rgba(0,0,0,.5)"></div>`,
-          iconAnchor: [6, 6]
-        })
-      : L.divIcon({
-          className: '',
-          html: `<div style="width:8px;height:8px;background:#f6ad55;border:1.5px solid rgba(255,255,255,.6);box-shadow:0 1px 3px rgba(0,0,0,.4);transform:rotate(45deg)"></div>`,
-          iconAnchor: [4, 4]
-        });
+    const color = distColors[r.distribuidor] || '#63b3ed';
+    const icon = iconoTipo(r, color);
 
     const m = L.marker([r.lat, r.long], { icon, draggable: modo === 'mover' });
     m._setaId = r.id;
-    m.bindTooltip(r.id, { permanent: false, direction: 'top', className: 'leaflet-tooltip-dark' });
+    m._cat = cat;
+    m.bindTooltip(cat === 'set' || cat === 'secc' ? r.id : `${TIPO_LABEL[r.tipo] || r.tipo} ${r.id}`,
+      { permanent: false, direction: 'top', className: 'leaflet-tooltip-dark' });
     m.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
       seleccionarSeta(r.id);
@@ -664,7 +700,7 @@ function renderizarSetas() {
       ctxMarker = r.id;
       mostrarCtxMenu(e.originalEvent.clientX, e.originalEvent.clientY, true);
     });
-    m.addTo(map);
+    if (capaVisible(cat)) m.addTo(map);
     setaMarkers[r.id] = m;
   });
 }
@@ -775,12 +811,13 @@ function seleccionarSeta(id) {
   document.getElementById('seta-info').style.display = 'block';
   document.getElementById('seta-empty').style.display = 'none';
   document.getElementById('si-id').innerHTML = `<i class="ti ti-bolt" style="font-size:14px"></i> ${id}`;
+  document.getElementById('si-tipo').textContent   = (TIPO_LABEL[r.tipo] || r.tipo || '-') + (r.estado_red ? ' · ' + r.estado_red : '');
   document.getElementById('si-dir').textContent    = r.direccion || '-';
   document.getElementById('si-kva').textContent    = r.kva ? r.kva + ' KVA' : '-';
   document.getElementById('si-cli').textContent    = r.clientes_bd != null ? r.clientes_bd + ' servicios' : '-';
   document.getElementById('si-dist').textContent   = r.distribuidor || '-';
   document.getElementById('si-et').textContent     = r.et || '-';
-  document.getElementById('si-fuente').textContent = r.fuente === 'manual' ? '✅ GPS manual' : (r.fuente === 'centroide' ? '📊 Centroide' : '❌ Sin ubicación');
+  document.getElementById('si-fuente').textContent = r.fuente === 'manual' ? '✅ GPS manual' : (r.fuente === 'gis_shapefile' ? '🛰️ GPS IDEJuy' : (r.fuente === 'centroide' ? '📊 Centroide' : '❌ Sin ubicación'));
 }
 
 function abrirGMaps() {
@@ -883,10 +920,23 @@ function ctxVerServiciosSeta() {
 /* ═══════════════════════════════════════
    CAPAS TOGGLE
 ═══════════════════════════════════════ */
+function aplicarCapaMarkers() {
+  Object.values(setaMarkers).forEach(m => capaVisible(m._cat) ? map.addLayer(m) : map.removeLayer(m));
+}
 function toggleCapaSetas() {
   capaSetas = !capaSetas;
   document.getElementById('btn-toggle-setas').classList.toggle('active', capaSetas);
-  Object.values(setaMarkers).forEach(m => capaSetas ? map.addLayer(m) : map.removeLayer(m));
+  aplicarCapaMarkers();
+}
+function toggleCapaCamaras() {
+  capaCams = !capaCams;
+  document.getElementById('btn-toggle-camaras').classList.toggle('active', capaCams);
+  aplicarCapaMarkers();
+}
+function toggleCapaEstaciones() {
+  capaEst = !capaEst;
+  document.getElementById('btn-toggle-estaciones').classList.toggle('active', capaEst);
+  aplicarCapaMarkers();
 }
 function toggleCapaLineas() {
   capaLineas = !capaLineas;
@@ -1029,30 +1079,39 @@ async function importarShapefile(input) {
 
     // Deduplicar por ID — quedarse con el primero de cada ID
     const vistos = new Set();
-    const unicos = convertidos.filter(r => {
-      if (vistos.has(r.id)) return false;
-      vistos.add(r.id); return true;
+    const unicos = [];
+    convertidos.forEach(r => {
+      r.tipo = r.tipo === 'SET' ? 'SE' : (r.tipo || 'SE');
+      let id = r.id;
+      // Mismo nombre con distinto tipo (ej. ET y CG "LAS MADERAS"): se distingue con el prefijo del tipo
+      if (vistos.has(id) && !vistos.has(r.tipo + ' ' + id)) id = r.tipo + ' ' + id;
+      if (vistos.has(id)) return;
+      vistos.add(id);
+      unicos.push({ ...r, id });
     });
     addLog(`🔍 ${convertidos.length - unicos.length} duplicados eliminados → ${unicos.length} únicos`);
 
     const BATCH = 300;
     let done = 0;
     for (let i = 0; i < unicos.length; i += BATCH) {
-      const batch = unicos.slice(i, i + BATCH).map(r => ({
-        id: r.id,
-        // Solo actualizar lat/long/fuente — preservar distribuidor/kva/etc del Excel
-        lat: r.lat,
-        long: r.lon,
-        fuente: 'gis_shapefile',
-        tipo: r.tipo || 'SE',
-        estado_red: r.estado,
-        // Campos mínimos para insert si no existe
-        distribuidor: null,
-        et: null,
-        kva: null,
-        clientes_bd: 0,
-        direccion: null,
-      }));
+      const batch = unicos.slice(i, i + BATCH).map(r => {
+        const prev = setasData[r.id];            // datos que ya vienen del Excel
+        const manual = prev && prev.fuente === 'manual';  // no pisar GPS corregido a mano
+        return {
+          id: r.id,
+          lat:  manual ? prev.lat  : r.lat,
+          long: manual ? prev.long : r.lon,
+          fuente: manual ? 'manual' : 'gis_shapefile',
+          tipo: r.tipo,
+          estado_red: r.estado,
+          // Preservar lo del Excel (antes se borraba con null)
+          distribuidor: prev?.distribuidor ?? null,
+          et: prev?.et ?? null,
+          kva: prev?.kva ?? null,
+          clientes_bd: prev?.clientes_bd ?? 0,
+          direccion: prev?.direccion ?? null,
+        };
+      });
 
       const { error } = await sb.from('lmt_setas').upsert(batch, {
         onConflict: 'id',
@@ -1066,7 +1125,7 @@ async function importarShapefile(input) {
     }
 
     pgfill.style.width = '100%';
-    addLog(`🎉 ¡Listo! ${done.toLocaleString()} SETs con GPS exacto cargadas`);
+    addLog(`🎉 ¡Listo! ${done.toLocaleString()} elementos con GPS exacto (SETs, cámaras, estaciones)`);
     addLog(`📊 Tipos: ${[...new Set(unicos.map(r=>r.tipo))].join(', ')}`);
 
     // Recargar datos del mapa
