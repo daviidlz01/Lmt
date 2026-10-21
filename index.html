@@ -8,18 +8,18 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:100vh;overflow:hidden}
+body{font-family:system-ui,sans-serif;background:#0d1219;color:#e2e8f0;height:100vh;overflow:hidden}
 
 /* ── TOPBAR ── */
-.topbar{height:48px;background:#1a1f2e;border-bottom:1px solid #2d3748;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:100}
-.topbar-logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#63b3ed}
+.topbar{height:48px;background:#16202b;border-bottom:1px solid #2a3a4a;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#4dc9e6}
 .topbar-logo i{font-size:20px}
-.topbar-sep{width:1px;height:24px;background:#2d3748}
+.topbar-sep{width:1px;height:24px;background:#2a3a4a}
 .topbar-title{font-size:13px;color:#a0aec0}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.tbtn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;border:1px solid #2d3748;background:#1e2535;color:#a0aec0;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-.tbtn:hover{background:#2d3748;color:#e2e8f0}
-.tbtn.active{background:#2b4c7e;color:#90cdf4;border-color:#4a90d9}
+.tbtn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;border:1px solid #2a3a4a;background:#1b2735;color:#a0aec0;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.tbtn:hover{background:#2a3a4a;color:#e2e8f0}
+.tbtn.active{background:#2b4c7e;color:#8ee3ef;border-color:#2bb0cf}
 .tbtn.success{background:#1a3a2a;color:#68d391;border-color:#2f855a}
 .tbtn.danger{background:#3a1a1a;color:#fc8181;border-color:#c53030}
 
@@ -27,46 +27,46 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
 .layout{display:flex;height:calc(100vh - 48px)}
 
 /* ── LEFT PANEL ── */
-.left-panel{width:300px;flex-shrink:0;background:#1a1f2e;border-right:1px solid #2d3748;display:flex;flex-direction:column;overflow:hidden}
-.panel-section{padding:12px 14px;border-bottom:1px solid #2d3748}
+.left-panel{width:300px;flex-shrink:0;background:#16202b;border-right:1px solid #2a3a4a;display:flex;flex-direction:column;overflow:hidden}
+.panel-section{padding:12px 14px;border-bottom:1px solid #2a3a4a}
 .ps-title{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .ps-title i{font-size:13px}
 
 /* Upload zone */
-.upload-zone{border:1.5px dashed #2d3748;border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:border-color .2s;background:#161b27}
-.upload-zone:hover{border-color:#4a90d9}
+.upload-zone{border:1.5px dashed #2a3a4a;border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:border-color .2s;background:#131c27}
+.upload-zone:hover{border-color:#2bb0cf}
 .upload-zone i{font-size:24px;color:#4a5568;display:block;margin-bottom:6px}
 .upload-zone p{font-size:11px;color:#718096}
 .upload-zone input{display:none}
-.upload-log{font-size:10px;color:#718096;background:#0f1117;border-radius:5px;padding:6px 8px;margin-top:6px;max-height:80px;overflow-y:auto;font-family:monospace;display:none;line-height:1.6}
+.upload-log{font-size:10px;color:#718096;background:#0d1219;border-radius:5px;padding:6px 8px;margin-top:6px;max-height:80px;overflow-y:auto;font-family:monospace;display:none;line-height:1.6}
 
 /* Distribuidor list */
 .dist-list{flex:1;overflow-y:auto}
-.dist-item{padding:8px 14px;border-bottom:1px solid #1e2535;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
-.dist-item:hover{background:#1e2535}
-.dist-item.active{background:#1e3a5a}
+.dist-item{padding:8px 14px;border-bottom:1px solid #1b2735;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
+.dist-item:hover{background:#1b2735}
+.dist-item.active{background:#1c4452}
 .dist-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .dist-name{font-size:12px;font-weight:600;color:#e2e8f0;flex:1}
 .dist-meta{font-size:10px;color:#718096}
-.dist-count{font-size:10px;color:#63b3ed;font-weight:700}
+.dist-count{font-size:10px;color:#4dc9e6;font-weight:700}
 
 /* Stats bar */
 .stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
-.stat-box{background:#0f1117;border-radius:6px;padding:7px 9px;border:1px solid #2d3748}
-.stat-num{font-size:17px;font-weight:700;color:#63b3ed}
+.stat-box{background:#0d1219;border-radius:6px;padding:7px 9px;border:1px solid #2a3a4a}
+.stat-num{font-size:17px;font-weight:700;color:#4dc9e6}
 .stat-lbl{font-size:10px;color:#718096}
 
 /* Mode toolbar */
 .mode-bar{display:flex;gap:4px;flex-wrap:wrap}
-.mbt{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:6px;border:1px solid #2d3748;background:#161b27;color:#718096;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;flex:1;justify-content:center}
-.mbt:hover{background:#1e2535;color:#e2e8f0}
-.mbt.on{background:#1e3a5a;color:#63b3ed;border-color:#2b5797}
+.mbt{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:6px;border:1px solid #2a3a4a;background:#131c27;color:#718096;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;flex:1;justify-content:center}
+.mbt:hover{background:#1b2735;color:#e2e8f0}
+.mbt.on{background:#1c4452;color:#4dc9e6;border-color:#1f7a8c}
 .mbt i{font-size:13px}
 
 /* Seta info panel */
-.seta-info{background:#0f1117;border-radius:8px;padding:10px 12px;font-size:12px;display:none}
-.si-title{font-size:13px;font-weight:700;color:#63b3ed;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.si-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a1f2e}
+.seta-info{background:#0d1219;border-radius:8px;padding:10px 12px;font-size:12px;display:none}
+.si-title{font-size:13px;font-weight:700;color:#4dc9e6;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.si-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #16202b}
 .si-row:last-child{border-bottom:none}
 .si-lbl{color:#718096}
 .si-val{color:#e2e8f0;font-weight:600;text-align:right}
@@ -76,46 +76,46 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
 #map{width:100%;height:100%}
 
 /* Map overlays */
-.map-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:500;background:#1a1f2e;border:1px solid #2d3748;color:#e2e8f0;padding:7px 14px;border-radius:99px;font-size:12px;font-weight:600;display:none;align-items:center;gap:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5)}
-.map-badge.drawing{background:#1e3a5a;border-color:#4a90d9;color:#90cdf4}
+.map-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:500;background:#16202b;border:1px solid #2a3a4a;color:#e2e8f0;padding:7px 14px;border-radius:99px;font-size:12px;font-weight:600;display:none;align-items:center;gap:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.map-badge.drawing{background:#1c4452;border-color:#2bb0cf;color:#8ee3ef}
 
-.legend-box{position:absolute;bottom:30px;right:12px;z-index:500;background:#1a1f2edd;border:1px solid #2d3748;border-radius:8px;padding:10px 12px;font-size:11px;min-width:170px}
+.legend-box{position:absolute;bottom:30px;right:12px;z-index:500;background:#16202bdd;border:1px solid #2a3a4a;border-radius:8px;padding:10px 12px;font-size:11px;min-width:170px}
 .leg-title{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;margin-bottom:6px}
 .leg-row{display:flex;align-items:center;gap:7px;padding:2px 0;color:#a0aec0}
 .leg-dot{width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,.3);flex-shrink:0}
 .leg-line{width:22px;height:3px;border-radius:99px;flex-shrink:0}
 
 /* Context menu */
-.ctx-menu{position:absolute;z-index:600;background:#1a1f2e;border:1px solid #2d3748;border-radius:8px;padding:4px;min-width:160px;box-shadow:0 4px 16px rgba(0,0,0,.5);display:none}
+.ctx-menu{position:absolute;z-index:600;background:#16202b;border:1px solid #2a3a4a;border-radius:8px;padding:4px;min-width:160px;box-shadow:0 4px 16px rgba(0,0,0,.5);display:none}
 .ctx-item{padding:7px 12px;font-size:12px;color:#e2e8f0;cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:7px}
-.ctx-item:hover{background:#2d3748}
+.ctx-item:hover{background:#2a3a4a}
 .ctx-item.danger{color:#fc8181}
 .ctx-item.danger:hover{background:#3a1a1a}
-.ctx-sep{height:1px;background:#2d3748;margin:3px 0}
+.ctx-sep{height:1px;background:#2a3a4a;margin:3px 0}
 
 /* Georeferenciación */
-.georef-overlay{position:fixed;inset:0;z-index:900;background:#0f1117ee;display:none;flex-direction:column}
-.georef-header{height:48px;background:#1a1f2e;border-bottom:1px solid #2d3748;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0}
-.georef-title{font-size:14px;font-weight:700;color:#63b3ed}
+.georef-overlay{position:fixed;inset:0;z-index:900;background:#0d1219ee;display:none;flex-direction:column}
+.georef-header{height:48px;background:#16202b;border-bottom:1px solid #2a3a4a;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0}
+.georef-title{font-size:14px;font-weight:700;color:#4dc9e6}
 .georef-body{display:flex;flex:1;overflow:hidden}
-.georef-left{width:340px;flex-shrink:0;background:#1a1f2e;border-right:1px solid #2d3748;padding:14px;overflow-y:auto}
+.georef-left{width:340px;flex-shrink:0;background:#16202b;border-right:1px solid #2a3a4a;padding:14px;overflow-y:auto}
 .georef-map{flex:1;position:relative}
 #georef-map{width:100%;height:100%}
-.cp-row{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid #2d3748;font-size:11px}
+.cp-row{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid #2a3a4a;font-size:11px}
 .cp-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
 .cp-coords{flex:1;font-family:monospace;color:#a0aec0}
 .cp-status{font-size:10px;flex-shrink:0}
-.georef-hint{font-size:11px;color:#718096;line-height:1.6;margin-bottom:10px;background:#161b27;border-radius:6px;padding:9px 10px}
+.georef-hint{font-size:11px;color:#718096;line-height:1.6;margin-bottom:10px;background:#131c27;border-radius:6px;padding:9px 10px}
 .opacity-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .opacity-row label{font-size:11px;color:#718096;white-space:nowrap}
 .opacity-row input{flex:1}
 ::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:#0f1117}
-::-webkit-scrollbar-thumb{background:#2d3748;border-radius:99px}
+::-webkit-scrollbar-track{background:#0d1219}
+::-webkit-scrollbar-thumb{background:#2a3a4a;border-radius:99px}
 
 /* Progress */
-.progress-bar{height:3px;background:#2d3748;border-radius:99px;overflow:hidden;margin-top:6px}
-.progress-fill{height:100%;background:#4a90d9;border-radius:99px;transition:width .3s}
+.progress-bar{height:3px;background:#2a3a4a;border-radius:99px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:#2bb0cf;border-radius:99px;transition:width .3s}
 </style>
 </head>
 <body>
@@ -159,7 +159,7 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
       <div class="ps-title"><i class="ti ti-search"></i> Buscar SET / cámara</div>
       <input id="buscar-input" type="search" placeholder="Ej: 1941 o SE1941" autocomplete="off"
         oninput="buscarSet(this.value)" onkeydown="if(event.key==='Enter') buscarSetEnter()"
-        style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #2d3748;border-radius:6px;background:#0f1117;color:#e2e8f0;outline:none;font-family:inherit">
+        style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #2a3a4a;border-radius:6px;background:#0d1219;color:#e2e8f0;outline:none;font-family:inherit">
       <div id="buscar-res" style="margin-top:6px;max-height:220px;overflow-y:auto"></div>
     </div>
 
@@ -169,7 +169,7 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
       <label class="upload-zone">
         <input type="file" id="file-shp" accept=".zip" onchange="importarShapefile(this)">
         <i class="ti ti-map-pin-bolt"></i>
-        <p>Subir <br><span style="font-size:10px">estaciones_electricas.zip</span></p>
+        <p>Subir ZIP del shapefile<br><span style="font-size:10px">estaciones_electricas.zip</span></p>
       </label>
       <div class="progress-bar" id="shp-pgbar" style="display:none">
         <div class="progress-fill" id="shp-pgfill" style="width:0%"></div>
@@ -248,14 +248,14 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
 
     <div class="legend-box">
       <div class="leg-title">Referencias</div>
-      <div class="leg-row"><div class="leg-dot" style="background:#63b3ed"></div> SET (centroide)</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#4dc9e6"></div> SET (centroide)</div>
       <div class="leg-row"><div class="leg-dot" style="background:#68d391"></div> SET (GPS manual)</div>
       <div class="leg-row"><div class="leg-dot" style="background:#b794f4;border-radius:3px"></div> Cámara</div>
-      <div class="leg-row"><div class="leg-dot" style="background:#4fd1c5;border-radius:2px"></div> Est. de Rebaje</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#f687b3;border-radius:2px"></div> Est. de Rebaje</div>
       <div class="leg-row"><div class="leg-dot" style="background:#fc8181;border-radius:3px"></div> Est. Transformadora</div>
       <div class="leg-row"><div class="leg-dot" style="background:#f6e05e;border-color:#744210"></div> Central de Generación</div>
       <div class="leg-row"><div class="leg-dot" style="background:#f6ad55;width:8px;height:8px;border-radius:2px"></div> Seccionador</div>
-      <div class="leg-row"><div class="leg-line" style="background:#63b3ed"></div> Línea LMT trazada</div>
+      <div class="leg-row"><div class="leg-line" style="background:#4dc9e6"></div> Línea LMT trazada</div>
       <div class="leg-row"><div class="leg-line" style="background:#68d391;height:2px;border-top:2px dashed #68d391;background:none"></div> LMT en edición</div>
     </div>
 
@@ -271,7 +271,7 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
 <!-- PANEL GEORREFERENCIACIÓN -->
 <div class="georef-overlay" id="georef-overlay">
   <div class="georef-header">
-    <i class="ti ti-layers-intersect" style="font-size:18px;color:#63b3ed"></i>
+    <i class="ti ti-layers-intersect" style="font-size:18px;color:#4dc9e6"></i>
     <span class="georef-title">Georreferenciar plano</span>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
       <span id="georef-status" style="font-size:11px;color:#718096"></span>
@@ -326,9 +326,9 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
       <div id="georef-map"></div>
       <!-- Preview del plano en la esquina -->
       <div id="plano-preview-wrap" style="position:absolute;bottom:12px;left:12px;z-index:500;display:none;flex-direction:column;gap:6px">
-        <div style="font-size:10px;color:#e2e8f0;background:#1a1f2ecc;padding:4px 8px;border-radius:5px;font-weight:600">Plano cargado — click para seleccionar punto</div>
-        <div style="position:relative;max-width:380px;max-height:280px;border:2px solid #4a90d9;border-radius:6px;overflow:hidden;cursor:crosshair" id="plano-preview-container">
-          <img id="plano-preview" style="width:100%;height:100%;object-fit:contain;display:block;background:#0f1117">
+        <div style="font-size:10px;color:#e2e8f0;background:#16202bcc;padding:4px 8px;border-radius:5px;font-weight:600">Plano cargado — click para seleccionar punto</div>
+        <div style="position:relative;max-width:380px;max-height:280px;border:2px solid #2bb0cf;border-radius:6px;overflow:hidden;cursor:crosshair" id="plano-preview-container">
+          <img id="plano-preview" style="width:100%;height:100%;object-fit:contain;display:block;background:#0d1219">
           <canvas id="plano-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
         </div>
       </div>
@@ -348,9 +348,9 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 // Paleta de colores por distribuidor (cíclica)
 const DIST_COLORS = [
-  '#63b3ed','#68d391','#f6ad55','#fc8181','#b794f4',
+  '#4dc9e6','#68d391','#f6ad55','#fc8181','#b794f4',
   '#76e4f7','#f687b3','#fbd38d','#9ae6b4','#feb2b2',
-  '#90cdf4','#c6f6d5','#feebc8','#fed7d7','#e9d8fd',
+  '#8ee3ef','#c6f6d5','#feebc8','#fed7d7','#e9d8fd',
   '#bee3f8','#c6f6d5','#faf089','#fed7e2','#e2e8f0',
 ];
 
@@ -477,7 +477,7 @@ function iconoTipo(r, color) {
     case 'CAM': return L.divIcon({ className:'', iconAnchor:[6,6],
       html:`<div style="width:12px;height:12px;border-radius:3px;background:#b794f4;${base}"></div>` });
     case 'ER': return L.divIcon({ className:'', iconAnchor:[8,8],
-      html:`<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:15px solid #4fd1c5;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))"></div>` });
+      html:`<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:15px solid #f687b3;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))"></div>` });
     case 'ET': return L.divIcon({ className:'', iconAnchor:[8,8],
       html:`<div style="width:16px;height:16px;border-radius:4px;background:#fc8181;${base}"></div>` });
     case 'CG': return L.divIcon({ className:'', iconAnchor:[8,8],
@@ -498,7 +498,7 @@ function renderizarSetas() {
     if (!r.lat || !r.long) return;
     const cat = catTipo(r.tipo);
 
-    const color = distColors[r.distribuidor] || '#63b3ed';
+    const color = distColors[r.distribuidor] || '#4dc9e6';
     const icon = iconoTipo(r, color);
 
     const m = L.marker([r.lat, r.long], { icon, draggable: modo === 'mover' });
@@ -532,7 +532,7 @@ function renderizarSetas() {
 function dibujarLineaDist(dist, puntos) {
   if (lineasLayers[dist]) map.removeLayer(lineasLayers[dist]);
   if (!puntos || puntos.length < 2) return;
-  const color = distColors[dist] || '#63b3ed';
+  const color = distColors[dist] || '#4dc9e6';
   const pl = L.polyline(puntos, { color, weight: 2.5, opacity: 0.85 });
   pl.addTo(map);
   lineasLayers[dist] = pl;
@@ -1173,7 +1173,7 @@ function renderCPList() {
     list.innerHTML = '<div style="font-size:11px;color:#4a5568;text-align:center;padding:12px">Cargá una imagen primero</div>';
     return;
   }
-  const cpColors = ['#f6ad55','#68d391','#63b3ed','#fc8181'];
+  const cpColors = ['#f6ad55','#68d391','#4dc9e6','#fc8181'];
   list.innerHTML = '';
   for (let i = 0; i < 4; i++) {
     const p = georefPuntos[i];
@@ -1191,7 +1191,7 @@ function renderCPList() {
       <div class="cp-status">
         ${p?.imgX != null && p?.lat != null ? '✅' : (p?.imgX != null ? '📍→🗺️' : '○')}
       </div>
-      <button onclick="seleccionarPunto(${i})" style="padding:3px 7px;font-size:10px;border:1px solid #2d3748;border-radius:4px;background:${isActive?'#2b5797':'#1e2535'};color:${isActive?'#90cdf4':'#718096'};cursor:pointer;font-family:inherit">
+      <button onclick="seleccionarPunto(${i})" style="padding:3px 7px;font-size:10px;border:1px solid #2a3a4a;border-radius:4px;background:${isActive?'#1f7a8c':'#1b2735'};color:${isActive?'#8ee3ef':'#718096'};cursor:pointer;font-family:inherit">
         ${isActive ? 'Activo' : 'Editar'}
       </button>`;
     list.appendChild(div);
@@ -1243,7 +1243,7 @@ function onGeorefMapClick(e) {
   p.lat = e.latlng.lat;
   p.lng = e.latlng.lng;
   // Agregar marker en georef-map
-  const cpColors = ['#f6ad55','#68d391','#63b3ed','#fc8181'];
+  const cpColors = ['#f6ad55','#68d391','#4dc9e6','#fc8181'];
   L.circleMarker([p.lat, p.lng], {
     radius: 7, color: cpColors[georefPuntoActivo], fillColor: cpColors[georefPuntoActivo],
     fillOpacity: 0.8, weight: 2
@@ -1266,7 +1266,7 @@ function dibujarPuntosEnImagen() {
   canvas.height = rect.height;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const cpColors = ['#f6ad55','#68d391','#63b3ed','#fc8181'];
+  const cpColors = ['#f6ad55','#68d391','#4dc9e6','#fc8181'];
   georefPuntos.forEach((p, i) => {
     if (!p?.imgX) return;
     const x = (p.imgX / imgNaturalW) * canvas.width;
@@ -1397,11 +1397,11 @@ function actualizarListaPlanos() {
   el.innerHTML = '';
   planosGuardados.forEach((p, i) => {
     const div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #2d3748;font-size:11px';
+    div.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #2a3a4a;font-size:11px';
     div.innerHTML = `
       <span style="flex:1;color:#a0aec0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nombre}</span>
-      <button onclick="togglePlano(${i})" style="padding:2px 6px;font-size:10px;border:1px solid #2d3748;border-radius:3px;background:#1e2535;color:#718096;cursor:pointer;font-family:inherit" id="btn-plano-${i}">👁️</button>
-      <button onclick="quitarPlano(${i})" style="padding:2px 6px;font-size:10px;border:1px solid #3a1a1a;border-radius:3px;background:#1e2535;color:#fc8181;cursor:pointer;font-family:inherit">✕</button>`;
+      <button onclick="togglePlano(${i})" style="padding:2px 6px;font-size:10px;border:1px solid #2a3a4a;border-radius:3px;background:#1b2735;color:#718096;cursor:pointer;font-family:inherit" id="btn-plano-${i}">👁️</button>
+      <button onclick="quitarPlano(${i})" style="padding:2px 6px;font-size:10px;border:1px solid #3a1a1a;border-radius:3px;background:#1b2735;color:#fc8181;cursor:pointer;font-family:inherit">✕</button>`;
     el.appendChild(div);
   });
 }
