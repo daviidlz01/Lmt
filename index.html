@@ -51,7 +51,7 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
 .dist-count{font-size:10px;color:#63b3ed;font-weight:700}
 
 /* Stats bar */
-.stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px}
+.stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
 .stat-box{background:#0f1117;border-radius:6px;padding:7px 9px;border:1px solid #2d3748}
 .stat-num{font-size:17px;font-weight:700;color:#63b3ed}
 .stat-lbl{font-size:10px;color:#718096}
@@ -157,18 +157,13 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
 <div class="layout">
   <div class="left-panel">
 
-    <!-- SUBIR EXCEL -->
+    <!-- BUSCADOR -->
     <div class="panel-section">
-      <div class="ps-title"><i class="ti ti-upload"></i> Cargar base de setas</div>
-      <label class="upload-zone">
-        <input type="file" id="file-setas" accept=".xlsx,.xls" onchange="cargarExcelSetas(this)">
-        <i class="ti ti-table-import"></i>
-        <p>Subir Excel de setas<br><span style="font-size:10px">BASE_SETAS_...xlsx</span></p>
-      </label>
-      <div class="progress-bar" id="pg-bar" style="display:none">
-        <div class="progress-fill" id="pg-fill" style="width:0%"></div>
-      </div>
-      <div class="upload-log" id="upload-log"></div>
+      <div class="ps-title"><i class="ti ti-search"></i> Buscar SET / cámara</div>
+      <input id="buscar-input" type="search" placeholder="Ej: 1941 o SE1941" autocomplete="off"
+        oninput="buscarSet(this.value)" onkeydown="if(event.key==='Enter') buscarSetEnter()"
+        style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #2d3748;border-radius:6px;background:#0f1117;color:#e2e8f0;outline:none;font-family:inherit">
+      <div id="buscar-res" style="margin-top:6px;max-height:220px;overflow-y:auto"></div>
     </div>
 
     <!-- IMPORTAR SHAPEFILE -->
@@ -191,7 +186,6 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
         <div class="stat-box"><div class="stat-num" id="st-setas">0</div><div class="stat-lbl">SETs</div></div>
         <div class="stat-box"><div class="stat-num" id="st-cam">0</div><div class="stat-lbl">Cám.</div></div>
         <div class="stat-box"><div class="stat-num" id="st-secc">0</div><div class="stat-lbl">Secc.</div></div>
-        <div class="stat-box"><div class="stat-num" id="st-dist">0</div><div class="stat-lbl">Distr.</div></div>
       </div>
     </div>
 
@@ -210,20 +204,11 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
         </button>
       </div>
       <div style="margin-top:8px;font-size:10px;color:#718096" id="mode-hint">
-        Seleccioná un distribuidor y usá "Trazar LMT" para dibujar la línea.
+        Hacé click en una SET para ver su información.
       </div>
-    </div>
-
-    <!-- DISTRIBUIDOR ACTIVO -->
-    <div class="panel-section">
-      <div class="ps-title"><i class="ti ti-route"></i> Distribuidor activo</div>
-      <select id="dist-select" onchange="setDistribuidor(this.value)"
-        style="width:100%;padding:6px 9px;font-size:12px;border:1px solid #2d3748;border-radius:6px;background:#0f1117;color:#e2e8f0;outline:none;font-family:inherit">
-        <option value="">— Todos —</option>
-      </select>
-      <div style="margin-top:6px;display:flex;gap:4px">
+      <div style="margin-top:8px;display:flex;gap:4px">
         <button class="tbtn" style="flex:1" onclick="descargarLinea()">
-          <i class="ti ti-download" style="font-size:11px"></i> Guardar línea
+          <i class="ti ti-device-floppy" style="font-size:11px"></i> Guardar línea
         </button>
         <button class="tbtn danger" style="flex:1" onclick="borrarLineaDist()">
           <i class="ti ti-trash" style="font-size:11px"></i> Borrar línea
@@ -256,11 +241,6 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
         Hacé click en una SET del mapa
       </div>
 
-      <!-- Lista distribuidores -->
-      <div class="ps-title" style="margin-top:10px"><i class="ti ti-list"></i> Distribuidores</div>
-      <div class="dist-list" id="dist-list">
-        <div style="padding:12px;font-size:11px;color:#4a5568;text-align:center">Cargá el Excel de setas</div>
-      </div>
     </div>
 
   </div><!-- /left-panel -->
@@ -359,7 +339,6 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -389,7 +368,6 @@ let lineasLayers = {};     // { distribuidor → polyline }
 let lineaEditando = null;  // polyline en edición
 let puntosEdicion = [];    // [[lat,lng]...] puntos de la línea en edición
 let modo = 'ver';
-let distActivo = '';
 let setaSeleccionada = null;
 let ctxLatLng = null;
 let ctxMarker = null;
@@ -429,13 +407,24 @@ function initMap() {
 /* ═══════════════════════════════════════
    CARGAR SETAS DESDE SUPABASE
 ═══════════════════════════════════════ */
+// Supabase devuelve como máximo 1000 filas por consulta: se pide por páginas
+async function fetchTodo(armar) {
+  const PAGE = 1000, out = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await armar().range(from, from + PAGE - 1);
+    if (error) { console.error(error); break; }
+    out.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return out;
+}
+
 async function cargarSetasDeSupabase() {
-  const { data } = await sb.from('lmt_setas').select('*');
+  const data = await fetchTodo(() => sb.from('lmt_setas').select('*').order('id'));
   if (!data || !data.length) return;
   data.forEach(r => { if (r.tipo === 'SET') r.tipo = 'SE'; setasData[r.id] = r; });
   asignarColoresDistribuidores();
   renderizarSetas();
-  poblarDistribuidores();
   document.getElementById('stats-sec').style.display = 'block';
   actualizarStats();
 }
@@ -456,136 +445,6 @@ async function cargarLineasDeSupabase() {
 }
 
 /* ═══════════════════════════════════════
-   CARGAR EXCEL DE SETAS
-═══════════════════════════════════════ */
-async function cargarExcelSetas(input) {
-  const file = input.files[0]; if (!file) return;
-  const log = document.getElementById('upload-log');
-  log.style.display = 'block'; log.innerHTML = '';
-  document.getElementById('pg-bar').style.display = 'block';
-  document.getElementById('pg-fill').style.width = '5%';
-
-  function addLog(m) { log.innerHTML += m + '<br>'; log.scrollTop = log.scrollHeight; }
-
-  addLog('📂 Leyendo Excel...');
-  const reader = new FileReader();
-  reader.onload = async e => {
-    try {
-      const wb = XLSX.read(e.target.result, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { raw: true, defval: '', header: 0 });
-
-      addLog(`✅ ${rows.length} filas`);
-      document.getElementById('pg-fill').style.width = '20%';
-
-      // Detectar columnas clave (fila 1 tiene los headers reales)
-      // El archivo tiene: col0=ID, col1=Dirección, col2=KVA, col4=Clientes, col8=Distribuidor, col9=ET, col10=Tipo(SE/S), col11=Estructura
-      const parsed = [];
-      rows.forEach((row, i) => {
-        const vals = Object.values(row);
-        const id   = String(vals[0] || '').trim();
-        const dir  = String(vals[1] || '').trim();
-        const kva  = parseInt(vals[2]) || null;
-        const cli  = parseInt(vals[4]) || null;
-        const dist = String(vals[8] || '').trim();
-        const et   = String(vals[9] || '').trim();
-        const tipo = String(vals[10] || '').trim(); // SE o S
-
-        if (!id || id === 'Nº SET' || id === 'Esta Carpeta') return;
-        if (!dist || dist === 'Distribuidor') return;
-
-        parsed.push({ id, dir, kva, cli, distribuidor: dist, et, tipo });
-      });
-
-      addLog(`🔍 ${parsed.filter(r=>r.tipo==='SE').length} SETs, ${parsed.filter(r=>r.tipo==='S').length} Seccionadores`);
-      document.getElementById('pg-fill').style.width = '35%';
-
-      // Calcular centroides usando servicios de la BD
-      addLog('📍 Calculando centroides de servicios...');
-      const setIds = parsed.filter(r => r.tipo === 'SE').map(r => r.id);
-
-      // Cargar servicios de Supabase agrupados por seta
-      const { data: servData } = await sb.from('servicios')
-        .select('seta, lat, long')
-        .not('lat', 'is', null)
-        .not('long', 'is', null);
-
-      // Calcular centroide por seta
-      const centroideMap = {};
-      (servData || []).forEach(r => {
-        if (!r.seta) return;
-        if (!centroideMap[r.seta]) centroideMap[r.seta] = { sumLat: 0, sumLng: 0, n: 0 };
-        centroideMap[r.seta].sumLat += r.lat;
-        centroideMap[r.seta].sumLng += r.long;
-        centroideMap[r.seta].n++;
-      });
-
-      let conCentroide = 0, sinCentroide = 0;
-
-      // Preparar rows para upsert
-      const upsertRows = parsed.map(r => {
-        const c = centroideMap[r.id];
-        const prev = setasData[r.id];
-        let lat = null, long = null, fuente = 'sin_ubicacion';
-        if (prev && (prev.fuente === 'gis_shapefile' || prev.fuente === 'manual') && prev.lat && prev.long) {
-          lat = prev.lat; long = prev.long; fuente = prev.fuente;   // conservar GPS exacto
-          conCentroide++;
-        } else if (c && c.n > 0) {
-          lat   = Math.round((c.sumLat / c.n) * 1e6) / 1e6;
-          long  = Math.round((c.sumLng / c.n) * 1e6) / 1e6;
-          fuente = 'centroide';
-          conCentroide++;
-        } else {
-          sinCentroide++;
-        }
-        return {
-          id: r.id,
-          distribuidor: r.distribuidor,
-          et: r.et,
-          tipo: ['CAM','ER','ET','CG'].includes(prev?.tipo) ? prev.tipo : r.tipo,
-          direccion: r.dir,
-          kva: r.kva,
-          clientes_bd: c?.n || 0,
-          lat, long, fuente,
-        };
-      });
-
-      addLog(`📊 ${conCentroide} con centroide, ${sinCentroide} sin ubicación`);
-      document.getElementById('pg-fill').style.width = '60%';
-
-      // Upsert por lotes
-      addLog('💾 Guardando en Supabase...');
-      const BATCH = 200;
-      let done = 0;
-      for (let i = 0; i < upsertRows.length; i += BATCH) {
-        const batch = upsertRows.slice(i, i + BATCH);
-        const { error } = await sb.from('lmt_setas').upsert(batch, { onConflict: 'id' });
-        if (error) { addLog('❌ ' + error.message); break; }
-        done += batch.length;
-        document.getElementById('pg-fill').style.width = (60 + Math.round(done / upsertRows.length * 35)) + '%';
-      }
-
-      document.getElementById('pg-fill').style.width = '100%';
-      addLog(`🎉 ${done} elementos guardados`);
-
-      // Recargar y renderizar
-      upsertRows.forEach(r => { setasData[r.id] = r; });
-      asignarColoresDistribuidores();
-      renderizarSetas();
-      poblarDistribuidores();
-      document.getElementById('stats-sec').style.display = 'block';
-      actualizarStats();
-
-      setTimeout(() => { document.getElementById('pg-bar').style.display = 'none'; }, 1000);
-    } catch (err) {
-      addLog('❌ Error: ' + err.message);
-    }
-  };
-  reader.readAsArrayBuffer(file);
-  input.value = '';
-}
-
-/* ═══════════════════════════════════════
    COLORES Y DISTRIBUIDORES
 ═══════════════════════════════════════ */
 function asignarColoresDistribuidores() {
@@ -595,43 +454,11 @@ function asignarColoresDistribuidores() {
   });
 }
 
-function poblarDistribuidores() {
-  const sel = document.getElementById('dist-select');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— Todos —</option>';
-  distList.forEach(d => {
-    const o = document.createElement('option');
-    o.value = d; o.textContent = d;
-    sel.appendChild(o);
-  });
-  if (cur) sel.value = cur;
-
-  const listEl = document.getElementById('dist-list');
-  listEl.innerHTML = '';
-  distList.forEach(d => {
-    const setas = Object.values(setasData).filter(r => r.distribuidor === d && r.tipo === 'SE');
-    const conPos = setas.filter(r => r.lat && r.long).length;
-    const hasLinea = !!lineasData[d];
-    const div = document.createElement('div');
-    div.className = 'dist-item' + (d === distActivo ? ' active' : '');
-    div.innerHTML = `
-      <div class="dist-color" style="background:${distColors[d]}"></div>
-      <div style="flex:1;min-width:0">
-        <div class="dist-name">${d}</div>
-        <div class="dist-meta">${setas.length} SETs · ${conPos} con GPS${hasLinea ? ' · <span style="color:#68d391">LMT ✓</span>' : ''}</div>
-      </div>
-      <span class="dist-count">${setas.length}</span>`;
-    div.onclick = () => setDistribuidor(d);
-    listEl.appendChild(div);
-  });
-}
-
 function actualizarStats() {
   const all = Object.values(setasData);
   document.getElementById('st-setas').textContent = all.filter(r => r.tipo === 'SE').length;
   document.getElementById('st-secc').textContent  = all.filter(r => r.tipo === 'S').length;
   document.getElementById('st-cam').textContent   = all.filter(r => r.tipo === 'CAM').length;
-  document.getElementById('st-dist').textContent  = distList.length;
 }
 
 /* ═══════════════════════════════════════
@@ -674,8 +501,6 @@ function renderizarSetas() {
   Object.values(setasData).forEach(r => {
     if (!r.lat || !r.long) return;
     const cat = catTipo(r.tipo);
-    // El filtro por distribuidor no oculta cámaras/estaciones que no tienen distribuidor asignado
-    if (distActivo && r.distribuidor !== distActivo && !((cat === 'cam' || cat === 'est') && !r.distribuidor)) return;
 
     const color = distColors[r.distribuidor] || '#63b3ed';
     const icon = iconoTipo(r, color);
@@ -718,10 +543,6 @@ function dibujarLineaDist(dist, puntos) {
 }
 
 function agregarPuntoLinea(latlng) {
-  if (!distActivo) {
-    setBadge('⚠️ Seleccioná un distribuidor primero', false);
-    return;
-  }
   puntosEdicion.push(latlng);
   actualizarLineaEdicion();
 }
@@ -729,28 +550,26 @@ function agregarPuntoLinea(latlng) {
 function actualizarLineaEdicion() {
   if (lineaEditando) map.removeLayer(lineaEditando);
   if (puntosEdicion.length < 2) return;
-  const color = distColors[distActivo] || '#63b3ed';
   lineaEditando = L.polyline(puntosEdicion, {
-    color, weight: 2.5, opacity: 1,
+    color: '#68d391', weight: 2.5, opacity: 1,
     dashArray: '6 4'
   });
   lineaEditando.addTo(map);
 }
 
 async function descargarLinea() {
-  if (!distActivo) { alert('Seleccioná un distribuidor'); return; }
-  if (!puntosEdicion.length && !lineasData[distActivo]) { alert('No hay línea para guardar'); return; }
+  if (puntosEdicion.length < 2) { alert('Trazá al menos 2 puntos con "Trazar LMT" antes de guardar'); return; }
+  const nombre = (prompt('Nombre de la línea LMT:', '') || '').trim();
+  if (!nombre) return;
+  if (lineasData[nombre] && !confirm(`Ya existe la línea "${nombre}". ¿Reemplazarla?`)) return;
+  const pts = puntosEdicion;
 
-  const pts = puntosEdicion.length ? puntosEdicion : lineasData[distActivo];
-  if (!pts || pts.length < 2) { alert('La línea necesita al menos 2 puntos'); return; }
+  // Borrar línea anterior con ese nombre
+  await sb.from('lmt_lineas').delete().eq('distribuidor', nombre);
 
-  // Borrar línea anterior del distribuidor
-  await sb.from('lmt_lineas').delete().eq('distribuidor', distActivo);
-
-  // Insertar nuevos puntos
   const rows = pts.map((p, i) => ({
-    distribuidor: distActivo,
-    et: setasData[Object.keys(setasData).find(k => setasData[k].distribuidor === distActivo)]?.et || '',
+    distribuidor: nombre,
+    et: '',
     orden: i,
     lat: p[0],
     long: p[1],
@@ -760,25 +579,29 @@ async function descargarLinea() {
   const { error } = await sb.from('lmt_lineas').insert(rows);
   if (error) { alert('Error: ' + error.message); return; }
 
-  lineasData[distActivo] = pts;
+  lineasData[nombre] = pts;
   puntosEdicion = [];
   if (lineaEditando) { map.removeLayer(lineaEditando); lineaEditando = null; }
-  dibujarLineaDist(distActivo, pts);
-  poblarDistribuidores();
-  setBadge(`✅ Línea de ${distActivo} guardada (${pts.length} puntos)`, false);
+  dibujarLineaDist(nombre, pts);
+  setBadge(`✅ Línea "${nombre}" guardada (${pts.length} puntos)`, false);
   setTimeout(() => hideBadge(), 3000);
 }
 
 async function borrarLineaDist() {
-  if (!distActivo) { alert('Seleccioná un distribuidor'); return; }
-  if (!confirm(`¿Borrar la línea LMT de ${distActivo}?`)) return;
-  await sb.from('lmt_lineas').delete().eq('distribuidor', distActivo);
-  if (lineasLayers[distActivo]) { map.removeLayer(lineasLayers[distActivo]); delete lineasLayers[distActivo]; }
-  delete lineasData[distActivo];
+  const nombres = Object.keys(lineasData);
+  const r = prompt('Línea guardada a borrar (dejá vacío para solo limpiar lo que estás trazando).' +
+    (nombres.length ? '\nGuardadas: ' + nombres.join(', ') : ''), '');
+  if (r === null) return;
   puntosEdicion = [];
   if (lineaEditando) { map.removeLayer(lineaEditando); lineaEditando = null; }
-  poblarDistribuidores();
-  setBadge(`🗑️ Línea de ${distActivo} borrada`, false);
+  const nombre = r.trim();
+  if (!nombre) return;
+  if (!lineasData[nombre]) { alert('No existe una línea con ese nombre'); return; }
+  if (!confirm(`¿Borrar la línea LMT "${nombre}"?`)) return;
+  await sb.from('lmt_lineas').delete().eq('distribuidor', nombre);
+  if (lineasLayers[nombre]) { map.removeLayer(lineasLayers[nombre]); delete lineasLayers[nombre]; }
+  delete lineasData[nombre];
+  setBadge(`🗑️ Línea "${nombre}" borrada`, false);
   setTimeout(() => hideBadge(), 2000);
 }
 
@@ -837,7 +660,7 @@ function setMode(m) {
   });
   const hints = {
     ver: 'Hacé click en una SET para ver su información.',
-    linea: 'Hacé click en el mapa o en una SET para agregar puntos a la línea LMT. Guardá con "Guardar línea".',
+    linea: 'Hacé click en el mapa o en una SET para agregar puntos a la línea LMT. Guardá con "Guardar línea" (te pide un nombre).',
     mover: 'Arrastrá una SET para corregir su posición. Se guarda automáticamente.',
   };
   document.getElementById('mode-hint').textContent = hints[m];
@@ -851,25 +674,75 @@ function setMode(m) {
   map.getContainer().style.cursor = m === 'linea' ? 'crosshair' : '';
 }
 
-function setDistribuidor(d) {
-  distActivo = d;
-  document.getElementById('dist-select').value = d;
-  // Limpiar edición anterior
-  puntosEdicion = [];
-  if (lineaEditando) { map.removeLayer(lineaEditando); lineaEditando = null; }
-  // Si hay línea guardada, cargar sus puntos para editar
-  if (lineasData[d]) puntosEdicion = [...lineasData[d]];
-  renderizarSetas();
-  poblarDistribuidores();
-  // Centrar en las setas del distribuidor
-  if (d) {
-    const pts = Object.values(setasData)
-      .filter(r => r.distribuidor === d && r.lat && r.long)
-      .map(r => [r.lat, r.long]);
-    if (pts.length > 0) {
-      pts.length === 1 ? map.setView(pts[0], 15) : map.fitBounds(pts, { padding: [40, 40] });
-    }
+/* ═══════════════════════════════════════
+   BUSCADOR DE SETs / CÁMARAS
+═══════════════════════════════════════ */
+let resultadosBusq = [];
+function normBusq(t) { return String(t || '').toUpperCase().replace(/\s+/g, ''); }
+
+function buscarSet(q) {
+  const box = document.getElementById('buscar-res');
+  box.innerHTML = '';
+  const n = normBusq(q);
+  resultadosBusq = [];
+  if (!n) return;
+
+  const all = Object.values(setasData);
+  const score = r => {
+    const id = normBusq(r.id);
+    if (id === n || id === 'SE' + n) return 0;
+    if (id.startsWith(n) || id.startsWith('SE' + n)) return 1;
+    return 2;
+  };
+  resultadosBusq = all.filter(r => normBusq(r.id).includes(n))
+    .sort((a, b) => score(a) - score(b) || String(a.id).localeCompare(String(b.id), 'es', { numeric: true }))
+    .slice(0, 12);
+
+  if (!resultadosBusq.length) {
+    const d = document.createElement('div');
+    d.style.cssText = 'font-size:11px;color:#fc8181;padding:6px 2px;line-height:1.4';
+    d.textContent = `No hay ningún "${q.trim()}" entre los ${all.length.toLocaleString()} elementos cargados desde Supabase.`;
+    box.appendChild(d);
+    return;
   }
+  resultadosBusq.forEach(r => {
+    const d = document.createElement('div');
+    d.className = 'dist-item';
+    d.style.cssText = 'padding:6px 8px;border-radius:5px;border-bottom:none';
+    const sinGps = !r.lat || !r.long;
+    const a = document.createElement('div'); a.className = 'dist-name'; a.textContent = r.id;
+    const b = document.createElement('div'); b.className = 'dist-meta';
+    b.textContent = (TIPO_LABEL[r.tipo] || r.tipo || '-') + (sinGps ? ' · sin GPS' : '');
+    if (sinGps) b.style.color = '#f6ad55';
+    const w = document.createElement('div'); w.style.cssText = 'flex:1;min-width:0';
+    w.appendChild(a); w.appendChild(b); d.appendChild(w);
+    d.onclick = () => irASet(r.id);
+    box.appendChild(d);
+  });
+}
+function buscarSetEnter() { if (resultadosBusq.length) irASet(resultadosBusq[0].id); }
+
+function asegurarCapa(cat) {
+  if (capaVisible(cat)) return;
+  if (cat === 'cam') { capaCams = true; document.getElementById('btn-toggle-camaras').classList.add('active'); }
+  else if (cat === 'est') { capaEst = true; document.getElementById('btn-toggle-estaciones').classList.add('active'); }
+  else { capaSetas = true; document.getElementById('btn-toggle-setas').classList.add('active'); }
+  aplicarCapaMarkers();
+}
+
+function irASet(id) {
+  const r = setasData[id]; if (!r) return;
+  seleccionarSeta(id);
+  if (!r.lat || !r.long) {
+    setBadge(`⚠️ ${id} está en la base pero no tiene coordenadas`, false);
+    setTimeout(() => hideBadge(), 3500);
+    return;
+  }
+  asegurarCapa(catTipo(r.tipo));
+  map.setView([r.lat, r.long], 18);
+  setaMarkers[id]?.openTooltip();
+  const halo = L.circleMarker([r.lat, r.long], { radius: 20, color: '#f6e05e', weight: 3, fill: false }).addTo(map);
+  setTimeout(() => map.removeLayer(halo), 3000);
 }
 
 /* ═══════════════════════════════════════
@@ -948,8 +821,8 @@ async function toggleCapaServicios() {
   document.getElementById('btn-toggle-servicios').classList.toggle('active', capaServicios);
   if (!capaServicios) { if (serviciosLayer) { map.removeLayer(serviciosLayer); serviciosLayer = null; } return; }
   setBadge('⏳ Cargando servicios...', false);
-  const { data } = await sb.from('servicios').select('lat, long, seta').not('lat','is',null).not('long','is',null);
-  if (!data) { hideBadge(); return; }
+  const data = await fetchTodo(() => sb.from('servicios').select('lat, long, seta').not('lat','is',null).not('long','is',null));
+  if (!data.length) { hideBadge(); return; }
   const pts = data.map(r => L.circleMarker([r.lat, r.long], {
     radius: 2, color: '#4a5568', fillColor: '#718096', fillOpacity: 0.4, weight: 0
   }));
