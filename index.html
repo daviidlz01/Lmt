@@ -140,9 +140,6 @@ body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;height:10
     <button class="tbtn" id="btn-toggle-lineas" onclick="toggleCapaLineas()">
       <i class="ti ti-vector-bezier"></i> LMT
     </button>
-    <button class="tbtn" id="btn-toggle-servicios" onclick="toggleCapaServicios()">
-      <i class="ti ti-home-bolt"></i> Servicios
-    </button>
     <div class="topbar-sep"></div>
     <button class="tbtn" onclick="exportarGeoJSON()">
       <i class="ti ti-download"></i> Exportar
@@ -371,9 +368,8 @@ let modo = 'ver';
 let setaSeleccionada = null;
 let ctxLatLng = null;
 let ctxMarker = null;
-let capaSetas = true, capaLineas = true, capaServicios = false;
+let capaSetas = true, capaLineas = true;
 let capaCams = true, capaEst = true;
-let serviciosLayer = null;
 let corrigiendoSeta = null;
 
 // Colores asignados por distribuidor
@@ -816,20 +812,6 @@ function toggleCapaLineas() {
   document.getElementById('btn-toggle-lineas').classList.toggle('active', capaLineas);
   Object.values(lineasLayers).forEach(l => capaLineas ? map.addLayer(l) : map.removeLayer(l));
 }
-async function toggleCapaServicios() {
-  capaServicios = !capaServicios;
-  document.getElementById('btn-toggle-servicios').classList.toggle('active', capaServicios);
-  if (!capaServicios) { if (serviciosLayer) { map.removeLayer(serviciosLayer); serviciosLayer = null; } return; }
-  setBadge('⏳ Cargando servicios...', false);
-  const data = await fetchTodo(() => sb.from('servicios').select('lat, long, seta').not('lat','is',null).not('long','is',null));
-  if (!data.length) { hideBadge(); return; }
-  const pts = data.map(r => L.circleMarker([r.lat, r.long], {
-    radius: 2, color: '#4a5568', fillColor: '#718096', fillOpacity: 0.4, weight: 0
-  }));
-  serviciosLayer = L.layerGroup(pts).addTo(map);
-  hideBadge();
-}
-
 /* ═══════════════════════════════════════
    EXPORTAR GEOJSON
 ═══════════════════════════════════════ */
